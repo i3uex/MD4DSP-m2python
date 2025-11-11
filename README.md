@@ -185,7 +185,7 @@ MD4DSP-m2python/
 The external documentation of the project is available in the following link: https://unexes.sharepoint.com/:w:/s/PDI_i3lab/EYNMm7pMsX1HuIKz_PMWCi8Bl_ssrzRnvp3hQHimY363ng?e=d8Cvvh
   
 ## Authors
-- Francisco Javier Melchor González
+- Fran Melchor
 - Carlos Breuer Carrasco
 - Carlos Cambero Rojas
 
