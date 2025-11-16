@@ -2597,7 +2597,7 @@ class PrePostSimpleTest(unittest.TestCase):
                                              'names': ['John', 'Mary', None, np.NaN, None, None]})
         field = None
         expected_exception = ValueError
-        with self.assertRaises(expected_exception):
+        with self.assertRaises(expected_exception) as context:
             self.pre_post.check_field_type(data_dictionary=data_dictionary, field=field, field_type=DataType.INTEGER,
                                            origin_function="String To Number")
         print_and_log("Test Case 9 Passed: Expected ValueError, got ValueError")
@@ -2607,7 +2607,7 @@ class PrePostSimpleTest(unittest.TestCase):
                                              'names': ['John', 'Mary', None, np.NaN, None, None]})
         field = 'names'
         expected_exception = ValueError
-        with self.assertRaises(expected_exception):
+        with self.assertRaises(expected_exception) as context:
             self.pre_post.check_field_type(data_dictionary=data_dictionary, field=field, field_type=None,
                                            origin_function="String To Number")
         print_and_log("Test Case 10 Passed: Expected ValueError, got ValueError")

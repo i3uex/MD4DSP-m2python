@@ -4,6 +4,10 @@ import pandas as pd
 from typing import Union
 from datetime import datetime
 # Importing functions and classes from packages
+from typing import Union, Type
+from datetime import datetime
+import numpy as np
+import pandas as pd
 from helpers.auxiliar import compare_numbers, count_abs_frequency
 from helpers.enumerations import Belong, Operator, Closure, DataType
 from helpers.transform_aux import get_outliers
@@ -791,8 +795,7 @@ def check_outliers(data_dictionary: pd.DataFrame, belong_op: Belong = None, fiel
                 raise ValueError("quant_rel and quant_abs should be None when belong_op is NOTBELONG")  # Case 23
 
 
-def check_field_type(data_dictionary: pd.DataFrame, field_type: DataType, field: str,
-                     origin_function: str = None) -> bool:
+def check_field_type(data_dictionary: pd.DataFrame, field_type: DataType, field: str, origin_function: str = None) -> bool:
     """
     Check if the field is of the specified type
 
@@ -806,7 +809,7 @@ def check_field_type(data_dictionary: pd.DataFrame, field_type: DataType, field:
     if field not in data_dictionary.columns:
         raise ValueError(f"DataField '{field}' not found in data_dictionary.")  # Case 0.5
     if field_type is None:
-        raise ValueError("field_type should be provided")
+        raise ValueError("Error: field_type should be provided")
     else:
         if field_type == DataType.STRING:
             if data_dictionary[field].dtype != object and data_dictionary[field].dtype != str:
@@ -830,6 +833,6 @@ def check_field_type(data_dictionary: pd.DataFrame, field_type: DataType, field:
                     f"Error - Origin function: {origin_function} DataField {field} is not of type {field_type}")
                 return False
         else:
-            raise ValueError(f"field_type {field_type} is not a valid type")
+            raise ValueError(f"Error: field_type {field_type} is not a valid type")
 
     return True  # Case 2

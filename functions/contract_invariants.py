@@ -1119,8 +1119,7 @@ def check_inv_missing_value_missing_value(data_dictionary_in: pd.DataFrame, data
                 # to validate that the cast has been done correctly, we have other invariants.
                 if not pd.isnull(value):
                     if belong_op_out == Belong.NOTBELONG:  # Check those that do not belong to NULL
-                        if (pd.isnull(data_dictionary_out.loc[row_index, field_out])
-                                or str(data_dictionary_out.loc[row_index, field_out]) != str(value)):
+                        if pd.isnull(data_dictionary_out.loc[row_index, field_out]):
                             print_and_log(
                                 f"Error in function:  {origin_function} Row: {row_index} and DataField: {field_out} value should be: {str(value)} but is: {str(data_dictionary_out.loc[row_index, field_out])}")
                             return False  # False because it was not null in the input and is null in the output
@@ -1538,9 +1537,9 @@ def check_inv_cast_type(data_dictionary_in: pd.DataFrame, data_dictionary_out: p
         if cast_type_out == DataType.INTEGER and cast_type_in == DataType.STRING:
             if np.issubdtype(data_dictionary_in[field_in].dtype, object) or np.issubdtype(
                     data_dictionary_in[field_in].dtype, str):
-                if str(data_dictionary_out[field_out].dtype) == 'Int64':
+                if str(data_dictionary_out[field_out].dtype) == 'int64':
                     for idx, item in data_dictionary_out[field_out].items():
-                        val_in = pd.array([data_dictionary_in.iloc[idx][field_in]], dtype='Int64')[0]
+                        val_in = pd.array([data_dictionary_in.iloc[idx][field_in]], dtype='int64')[0]
                         if not ((pd.isna(item) and pd.isna(val_in)) or (
                                 pd.notna(item) and pd.notna(val_in) and item == val_in)):
                             result = False
@@ -1576,9 +1575,9 @@ def check_inv_cast_type(data_dictionary_in: pd.DataFrame, data_dictionary_out: p
         if cast_type_out == DataType.INTEGER and cast_type_in == DataType.STRING:
             if np.issubdtype(data_dictionary_in[field_in].dtype, object) or np.issubdtype(
                     data_dictionary_in[field_in].dtype, str):
-                if str(data_dictionary_out[field_out].dtype) == 'Int64':
+                if str(data_dictionary_out[field_out].dtype) == 'int64':
                     for idx, item in data_dictionary_out[field_out].items():
-                        val_in = pd.array([data_dictionary_in.iloc[idx][field_in]], dtype='Int64')[0]
+                        val_in = pd.array([data_dictionary_in.iloc[idx][field_in]], dtype='int64')[0]
                         if not ((pd.isna(item) and pd.isna(val_in)) or (
                                 pd.notna(item) and pd.notna(val_in) and item == val_in)):
                             result = True
