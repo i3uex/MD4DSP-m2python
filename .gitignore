@@ -18,7 +18,6 @@ __pycache__/
 
 # Archivos de configuración
 *.ini
-*.log
 *.conf
 
 # Carpeta de resultados y cache para herramientas de construcción
@@ -31,10 +30,6 @@ __pycache__/
 
 # Carpeta de archivos generados automáticamente
 __pycache__/
-
-# Carpeta de registros
-*.log
-logs/
 
 
 /.idea/
