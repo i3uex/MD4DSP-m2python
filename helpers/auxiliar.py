@@ -2,6 +2,7 @@
 import re
 import math
 import numpy as np
+import contractions
 import pandas as pd
 from typing import Union
 from datetime import datetime
@@ -50,16 +51,17 @@ def compare_numbers(rel_abs_number: Union[int, float], quant_rel_abs: Union[int,
         raise ValueError("No valid operator")
 
 
-def check_interval_condition(x: Union[int, float], left_margin: float,
-                             right_margin: float, closure_type: Closure) -> bool:
+def check_interval_condition(x: Union[int, float, pd.Timestamp], left_margin: Union[int, float, pd.Timestamp],
+                             right_margin: Union[int, float, pd.Timestamp], closure_type: Closure) -> bool:
     """
     Check if the value x meets the condition of the interval [left_margin, right_margin] with closureType
 
     params:
-        :param x: (Union[int, float]) value to check
-        :param left_margin: (float) left margin of the interval
-        :param right_margin: (float) right margin of the interval
-        :param closure_type: (Closure) closure of the interval
+        :param x: (Union[int, float, pd.Timestamp]) value to check
+        :param left_margin: (Union[int, float, pd.Timestamp]) left margin of the interval
+        :param right_margin: (Union[int, float, pd.Timestamp]) right margin of the interval
+        :param closure_type: (Closure) closure type of the interval, can be openOpen, openClosed,
+        closedOpen or closedClosed
 
     Returns:
         :return: True if the value x meets the condition of the interval
@@ -329,3 +331,21 @@ def is_datetime_string(value):
         except (ValueError, TypeError):
             continue
     return False
+
+
+def normalize_text(text: str) -> str:
+    """
+    Normalize text for better comparison by removing punctuation,
+    converting to lowercase, and handling contractions.
+    """
+    if pd.isna(text) or not isinstance(text, str):
+        return ""
+
+    # Expand contractions
+    text = contractions.fix(text)
+    # Remove punctuation and special characters, keep only alphanumeric and spaces
+    text = re.sub(r'[^a-zA-Z0-9\s]', ' ', text)
+    # Convert to lowercase and normalize whitespace
+    text = re.sub(r'\s+', ' ', text.lower().strip())
+
+    return text

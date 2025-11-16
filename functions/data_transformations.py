@@ -1339,7 +1339,7 @@ def transform_math_operation(data_dictionary: pd.DataFrame, math_op: MathOperato
         if is_field_first and is_field_second:
             if (data_dictionary_copy[second_operand] == 0).any():
                 warnings.warn(
-                    f"Division by zero encountered in DataField '{second_operand}'. Result will be NaN where divisor is 0.")
+                    f"Division by zero encountered in DataField {second_operand}. Result will be NaN where divisor is 0.")
             data_dictionary_copy[field_out] = data_dictionary_copy[first_operand] / data_dictionary_copy[second_operand]
             data_dictionary_copy[field_out] = data_dictionary_copy[field_out].replace([np.inf, -np.inf], np.nan)
         elif is_field_first and not is_field_second:
@@ -1351,7 +1351,7 @@ def transform_math_operation(data_dictionary: pd.DataFrame, math_op: MathOperato
         elif not is_field_first and is_field_second:
             if (data_dictionary_copy[second_operand] == 0).any():
                 warnings.warn(
-                    f"Division by zero encountered in DataField '{second_operand}'. Result will be NaN where divisor is 0.")
+                    f"Division by zero encountered in DataField {second_operand}. Result will be NaN where divisor is 0.")
             data_dictionary_copy[field_out] = first_operand / data_dictionary_copy[second_operand]
             data_dictionary_copy[field_out] = data_dictionary_copy[field_out].replace([np.inf, -np.inf], np.nan)
         elif not is_field_first and not is_field_second:
@@ -1429,7 +1429,7 @@ def transform_filter_rows_date_range(data_dictionary: pd.DataFrame, columns: lis
                 raise ValueError(f"The DataField {current_column} does not exist in the dataframe")
 
             # Verify the column contains datetime values
-            if not pd.api.types.is_datetime64_any_dtype(data_dictionary_copy[current_column]):
+            if not pd.api.types.is_datetime64_any_dtype(data_dictionary_copy[current_column]) and data_dictionary_copy[current_column].dtype != 'object':
                 raise ValueError(f"The DataField {current_column} is not a datetime column")
 
             # Exclude or include the values within the interval [left_margin, right_margin] in the column
@@ -1438,6 +1438,7 @@ def transform_filter_rows_date_range(data_dictionary: pd.DataFrame, columns: lis
                     lambda x: check_interval_condition(x, left_margin_list[index], right_margin_list[index],
                                                        closure_type_list[index]))]
             elif filter_type == FilterType.EXCLUDE:
+                # Filter out the rows that do not satisfy the interval condition
                 data_dictionary_copy = data_dictionary_copy[~data_dictionary_copy[current_column].apply(
                     lambda x: check_interval_condition(x, left_margin_list[index], right_margin_list[index],
                                                        closure_type_list[index]))]

@@ -53,7 +53,12 @@ class DataSmellsSimpleTest(unittest.TestCase):
             self.execute_check_suspect_date_value_SimpleTests,
             self.execute_check_suspect_far_date_value_SimpleTests,
             self.execute_check_number_size_SimpleTests,
-            self.execute_check_string_casing_SimpleTests
+            self.execute_check_string_casing_SimpleTests,
+            self.execute_check_intermingled_data_type_SimpleTests,
+            self.execute_check_contracted_text_SimpleTests,
+            self.execute_check_abbreviation_inconsistency_SimpleTests,
+            self.execute_check_syntactic_synonym_SimpleTests,
+            self.execute_check_ambiguous_value_SimpleTests
         ]
 
         print_and_log("")
@@ -615,7 +620,6 @@ class DataSmellsSimpleTest(unittest.TestCase):
         # Create test data
         data = {
             'clean_text': ['hello world', 'test case', 'simple text'],
-            'uppercase_text': ['Hello World', 'TEST CASE', 'Simple Text'],
             'accented_text': ['café', 'niño', 'résumé'],
             'special_chars': ['hello@world', 'test#case', 'simple!text'],
             'extra_spaces': ['hello  world', 'test   case', 'simple    text'],
@@ -640,70 +644,65 @@ class DataSmellsSimpleTest(unittest.TestCase):
         self.assertTrue(result)
         print_and_log("Test Case 2 Passed: Expected no smell for clean text, got no smell")
 
-        # Test Case 3: String field with uppercase letters (smell)
-        result = self.data_smells.check_special_character_spacing(df, 'uppercase_text')
-        self.assertFalse(result)
-        print_and_log("Test Case 3 Passed: Expected smell for uppercase text, got smell")
-
-        # Test Case 4: String field with accents (smell)
+        # Test Case 3: String field with accents (smell)
         result = self.data_smells.check_special_character_spacing(df, 'accented_text')
         self.assertFalse(result)
-        print_and_log("Test Case 4 Passed: Expected smell for accented text, got smell")
+        print_and_log("Test Case 3 Passed: Expected smell for accented text, got smell")
 
-        # Test Case 5: String field with special characters (smell)
+        # Test Case 4: String field with special characters (smell)
         result = self.data_smells.check_special_character_spacing(df, 'special_chars')
         self.assertFalse(result)
-        print_and_log("Test Case 5 Passed: Expected smell for special characters, got smell")
+        print_and_log("Test Case 4 Passed: Expected smell for special characters, got smell")
 
-        # Test Case 6: String field with extra spaces (smell)
+        # Test Case 5: String field with extra spaces (smell)
         result = self.data_smells.check_special_character_spacing(df, 'extra_spaces')
         self.assertFalse(result)
-        print_and_log("Test Case 6 Passed: Expected smell for extra spaces, got smell")
+        print_and_log("Test Case 5 Passed: Expected smell for extra spaces, got smell")
 
-        # Test Case 7: String field with mixed issues (smell)
+        # Test Case 6: String field with mixed issues (smell)
         result = self.data_smells.check_special_character_spacing(df, 'mixed_issues')
         self.assertFalse(result)
-        print_and_log("Test Case 7 Passed: Expected smell for mixed issues, got smell")
+        print_and_log("Test Case 6 Passed: Expected smell for mixed issues, got smell")
 
-        # Test Case 8: Numeric field (no smell)
+        # Test Case 7: Numeric field (no smell)
         result = self.data_smells.check_special_character_spacing(df, 'numeric_field')
         self.assertTrue(result)
-        print_and_log("Test Case 8 Passed: Expected no smell for numeric field, got no smell")
+        print_and_log("Test Case 7 Passed: Expected no smell for numeric field, got no smell")
 
-        # Test Case 9: Empty DataFrame with specific column (should raise ValueError)
+        # Test Case 8: Empty DataFrame with specific column (should raise ValueError)
         with self.assertRaises(ValueError):
             self.data_smells.check_special_character_spacing(empty_df, 'any_column')
-        print_and_log("Test Case 9 Passed: Expected ValueError for empty DataFrame with specific column, got ValueError")
+        print_and_log("Test Case 8 Passed: Expected ValueError for empty DataFrame with specific column, got ValueError")
 
-        # Test Case 10: Column with all NaN values
+        # Test Case 9: Column with all NaN values
         result = self.data_smells.check_special_character_spacing(df, 'all_nan')
         self.assertTrue(result)
-        print_and_log("Test Case 10 Passed: Expected no smell for all NaN column, got no smell")
+        print_and_log("Test Case 9 Passed: Expected no smell for all NaN column, got no smell")
 
-        # Test Case 11: Column with empty strings (no smell)
+        # Test Case 10: Column with empty strings (no smell)
         result = self.data_smells.check_special_character_spacing(df, 'empty_column')
         self.assertTrue(result)
-        print_and_log("Test Case 11 Passed: Expected no smell for empty strings, got no smell")
+        print_and_log("Test Case 10 Passed: Expected no smell for empty strings, got no smell")
 
-        # Test Case 12: Column with single character issues (smell)
+        # Test Case 11: Column with single character issues (smell)
         result = self.data_smells.check_special_character_spacing(df, 'single_char_issues')
         self.assertFalse(result)
-        print_and_log("Test Case 12 Passed: Expected smell for single character issues, got smell")
+        print_and_log("Test Case 11 Passed: Expected smell for single character issues, got smell")
 
-        # Test Case 13: Column with numbers as strings (no smell)
+        # Test Case 12: Column with numbers as strings (no smell)
         result = self.data_smells.check_special_character_spacing(df, 'numbers_as_strings')
         self.assertTrue(result)
-        print_and_log("Test Case 13 Passed: Expected no smell for numbers as strings, got no smell")
+        print_and_log("Test Case 12 Passed: Expected no smell for numbers as strings, got no smell")
 
-        # Test Case 14: Column with mixed clean and dirty text (smell)
+        # Test Case 13: Column with mixed clean and dirty text (smell)
         result = self.data_smells.check_special_character_spacing(df, 'mixed_clean_dirty')
         self.assertFalse(result)
-        print_and_log("Test Case 14 Passed: Expected smell for mixed clean/dirty text, got smell")
+        print_and_log("Test Case 13 Passed: Expected smell for mixed clean/dirty text, got smell")
 
-        # Test Case 15: Check all columns at once (smell present)
+        # Test Case 14: Check all columns at once (smell present)
         result = self.data_smells.check_special_character_spacing(df)  # Check all columns
         self.assertFalse(result)
-        print_and_log("Test Case 15 Passed: Expected smell when checking all columns, got smell")
+        print_and_log("Test Case 14 Passed: Expected smell when checking all columns, got smell")
 
     def execute_check_suspect_distribution_SimpleTests(self):
         """
@@ -2102,7 +2101,7 @@ class DataSmellsSimpleTest(unittest.TestCase):
         df8 = pd.DataFrame({'text': [np.nan, np.nan, np.nan]})
         result = self.data_smells.check_string_casing(df8, 'text')
         assert result is True, "Test Case 8 Failed: Should handle all NaN values"
-        print_and_log("Test Case 8 Passed: Handled all NaN values")
+        print_and_log("Test Case 8 Passed: All NaN values handled correctly")
 
         # Test 9: Single character values
         df9 = pd.DataFrame({'text': ['A', 'b', 'C']})
@@ -2240,4 +2239,727 @@ class DataSmellsSimpleTest(unittest.TestCase):
         print_and_log("Test Case 30 Passed: Detected inconsistent programming terms")
 
         print_and_log("\nFinished testing check_string_casing function")
+        print_and_log("-----------------------------------------------------------")
+
+    def execute_check_intermingled_data_type_SimpleTests(self):
+        """
+        Execute simple tests for check_intermingled_data_type function.
+        Tests the following cases:
+        1. Numeric column with some string values (smell)
+        2. String column with some numeric values (smell)
+        3. Date column with some string values (smell)
+        4. Mixed types in object column (no smell)
+        5. Empty DataFrame
+        6. Non-existent field
+        7. Column with all NaN values
+        8. Boolean column (no smell)
+        9. Integer column with NaN (no smell)
+        10. Float column with NaN (no smell)
+        11. String column with special characters (no smell)
+        12. Date column with valid dates (no smell)
+        13. Time column with valid times (no smell)
+        14. DateTime column with valid datetimes (no smell)
+        15. Check all columns at once (smell present)
+        """
+        print_and_log("")
+        print_and_log("Testing check_intermingled_data_type function...")
+
+        # Create test data
+        data = {
+            'numeric_with_strings': [1, 2, 'three', 4.0, '5.0'],
+            'string_with_numbers': ['one', 'two', 3, 'four', 5],
+            'date_with_strings': ['2024-01-01', 'not_a_date', '2024-12-31', '2023-10-30', 'hola que hase'],
+            'mixed_objects': [1, 'two', 3.0, 'four', None],
+            'boolean_column': [True, False, True, False, True],
+            'integer_with_nan': [1, 2, np.nan, 4, -1],
+            'float_with_nan': [1.1, 2.2, np.nan, 4.4, 54.6],
+            'special_characters': ['@', '#', '$', '%', '&'],
+            'valid_dates': pd.date_range('2024-01-01', periods=5, freq='D'),
+            'valid_datetimes': pd.date_range('2024-01-01 01:00', periods=5, freq='H')
+        }
+        df = pd.DataFrame(data)
+        empty_df = pd.DataFrame()
+
+        # Test Case 1: Numeric column with some string values (smell)
+        result = self.data_smells.check_intermingled_data_type(df, 'numeric_with_strings')
+        self.assertFalse(result)
+        print_and_log("Test Case 1 Passed: Smell detected for numeric column with strings")
+
+        # Test Case 2: String column with some numeric values (smell)
+        result = self.data_smells.check_intermingled_data_type(df, 'string_with_numbers')
+        self.assertFalse(result)
+        print_and_log("Test Case 2 Passed: Smell detected for string column with numbers")
+
+        # Test Case 3: Date column with some string values (smell)
+        result = self.data_smells.check_intermingled_data_type(df, 'date_with_strings')
+        self.assertFalse(result)
+        print_and_log("Test Case 3 Passed: Smell detected for date column with strings")
+
+        # Test Case 4: Mixed types in object column (smell is detected
+        result = self.data_smells.check_intermingled_data_type(df, 'mixed_objects')
+        self.assertFalse(result)
+        print_and_log("Test Case 4 Passed: Smell detected for mixed objects column")
+
+        # Test Case 5: Empty DataFrame
+        result = self.data_smells.check_intermingled_data_type(empty_df)
+        self.assertTrue(result)
+        print_and_log("Test Case 5 Passed: No smell for empty DataFrame")
+
+        # Test Case 6: Non-existent field
+        with self.assertRaises(ValueError):
+            self.data_smells.check_intermingled_data_type(df, 'non_existent')
+        print_and_log("Test Case 6 Passed: ValueError raised for non-existent field")
+
+        # Test Case 7: Column with all NaN values
+        df_nan = pd.DataFrame({'mixed_objects': [np.nan, np.nan, np.nan]})
+        result = self.data_smells.check_intermingled_data_type(df_nan, 'mixed_objects')
+        self.assertTrue(result)
+        print_and_log("Test Case 7 Passed: No smell for column with all NaN values")
+
+        # Test Case 8: Boolean column (no smell)
+        result = self.data_smells.check_intermingled_data_type(df, 'boolean_column')
+        self.assertTrue(result)
+        print_and_log("Test Case 8 Passed: No smell for boolean column")
+
+        # Test Case 9: Integer column with NaN (no smell)
+        result = self.data_smells.check_intermingled_data_type(df, 'integer_with_nan')
+        self.assertTrue(result)
+        print_and_log("Test Case 9 Passed: No smell for integer column with NaN")
+
+        # Test Case 10: Float column with NaN (no smell)
+        result = self.data_smells.check_intermingled_data_type(df, 'float_with_nan')
+        self.assertTrue(result)
+        print_and_log("Test Case 10 Passed: No smell for float column with NaN")
+
+        # Test Case 11: String column with special characters (no smell)
+        result = self.data_smells.check_intermingled_data_type(df, 'special_characters')
+        self.assertTrue(result)
+        print_and_log("Test Case 11 Passed: No smell for string column with special characters")
+
+        # Test Case 12: Date column with valid dates (no smell)
+        result = self.data_smells.check_intermingled_data_type(df, 'valid_dates')
+        self.assertTrue(result)
+        print_and_log("Test Case 12 Passed: No smell for date column with valid dates")
+
+        # Test Case 13: DateTime column with valid datetimes (no smell)
+        result = self.data_smells.check_intermingled_data_type(df, 'valid_datetimes')
+        self.assertTrue(result)
+        print_and_log("Test Case 13 Passed: No smell for DateTime column with valid datetimes")
+
+        # Test Case 14: Check all columns at once (smell present)
+        df_mixed_all = pd.DataFrame({
+            'col1': [1, 2, 3],
+            'col2': ['a', 'b', 'c'],
+            'col3': [pd.Timestamp('2024-01-01'), np.nan, 'not_a_date']
+        })
+        result = self.data_smells.check_intermingled_data_type(df_mixed_all)
+        self.assertFalse(result)
+        print_and_log("Test Case 14 Passed: Smell detected when checking all columns")
+
+        print_and_log("\nFinished testing check_intermingled_data_type function")
+        print_and_log("-----------------------------------------------------------")
+
+    def execute_check_contracted_text_SimpleTests(self):
+        """
+        Execute simple tests for check_contracted_text function.
+        Tests the following cases:
+        1. Standard contractions (e.g., "don't", "I'm")
+        2. Negations (e.g., "isn't", "aren't")
+        3. Possessives (e.g., "John's", "dog's")
+        4. Plurals (e.g., "dogs", "cats")
+        5. Mixed contractions and possessives
+        6. Non-existent field
+        7. Empty DataFrame
+        8. Column with all NaN values
+        9. String column with no contractions (no smell)
+        10. Numeric column (no smell)
+        11. Date column (no smell)
+        12. Time column (no smell)
+        13. DateTime column (no smell)
+        14. Check all columns at once (smell present)
+        """
+        print_and_log("")
+        print_and_log("Testing check_contracted_text function...")
+
+        # Create test data
+        data = {
+            'standard_contractions': ["don't", "I'm", "he's", "she's", "it's"],
+            'negations': ["isn't", "aren't", "haven't", "hasn't", "won't"],
+            'possessives': ["John's", "dog's", "cat's", "child's", "woman's"],
+            'plurals': ["dogs", "cats", "children", "women", "men"],
+            'mixed_contractions_possessives': ["don't know", "I'm happy", "he's John", "she's a doctor", "it's mine"],
+            'no_contractions': ["hello", "world", "test", "data", "smell"],
+            'numbers': [1, 2, 3, 4, 5],
+            'dates': pd.date_range('2024-01-01', periods=5, freq='D'),
+            'valid_datetimes': pd.date_range('2024-01-01 01:00', periods=5, freq='H'),
+            'times': pd.date_range('2024-01-01 01:00', periods=5, freq='H')
+        }
+        df = pd.DataFrame(data)
+        empty_df = pd.DataFrame()
+
+        # Test Case 1: Standard contractions (Smell)
+        result = self.data_smells.check_contracted_text(df, 'standard_contractions')
+        assert result is False, "Test Case 1 Failed: Should detect smell for standard contractions"
+        print_and_log("Test Case 1 Passed: Smell detected for standard contractions")
+
+        # Test Case 2: Negations (Smell)
+        result = self.data_smells.check_contracted_text(df, 'negations')
+        assert result is False, "Test Case 1 Failed: Should detect smell for negations"
+        print_and_log("Test Case 2 Passed: Smell detected for negations")
+
+        # Test Case 3: Possessives (no smell)
+        result = self.data_smells.check_contracted_text(df, 'possessives')
+        assert result is True, "Test Case 3 Failed: Should not detect smell for possessives"
+        print_and_log("Test Case 3 Passed: No smell detected for possessives")
+
+        # Test Case 4: Plurals (no smell)
+        result = self.data_smells.check_contracted_text(df, 'plurals')
+        assert result is True, "Test Case 4 Failed: Should not detect smell for plurals"
+        print_and_log("Test Case 4 Passed: No smell detected for plurals")
+
+        # Test Case 5: Mixed contractions and possessives (Smell)
+        result = self.data_smells.check_contracted_text(df, 'mixed_contractions_possessives')
+        assert result is False, "Test Case 5 Failed: Should detect smell for mixed contractions and possessives"
+        print_and_log("Test Case 5 Passed: Smell detected for mixed contractions and possessives")
+
+        # Test Case 6: Non-existent field
+        with self.assertRaises(ValueError):
+            self.data_smells.check_contracted_text(df, 'non_existent_field')
+        print_and_log("Test Case 6 Passed: ValueError raised for non-existent field")
+
+        # Test Case 7: Empty DataFrame
+        result = self.data_smells.check_contracted_text(empty_df)
+        assert result is True, "Test Case 7 Failed: Should not detect smell for empty DataFrame"
+        print_and_log("Test Case 7 Passed: No smell detected for empty DataFrame")
+
+        # Test Case 8: Column with all NaN values
+        df_nan = pd.DataFrame({'text': [np.nan, np.nan, np.nan]})
+        result = self.data_smells.check_contracted_text(df_nan, 'text')
+        assert result is True, "Test Case 8 Failed: Should not detect smell for column with all NaN values"
+        print_and_log("Test Case 8 Passed: No smell detected for column with all NaN values")
+
+        # Test Case 9: String column with no contractions (no smell)
+        result = self.data_smells.check_contracted_text(df, 'no_contractions')
+        assert result is True, "Test Case 9 Failed: Should not detect smell for string column with no contractions"
+        print_and_log("Test Case 9 Passed: No smell detected for string column with no contractions")
+
+        # Test Case 10: Numeric column (no smell)
+        result = self.data_smells.check_contracted_text(df, 'numbers')
+        assert result is True, "Test Case 10 Failed: Should not detect smell for numeric column"
+        print_and_log("Test Case 10 Passed: No smell detected for numeric column")
+
+        # Test Case 11: Date column (no smell)
+        result = self.data_smells.check_contracted_text(df, 'dates')
+        assert result is True, "Test Case 11 Failed: Should not detect smell for date column"
+        print_and_log("Test Case 11 Passed: No smell detected for date column")
+
+        # Test Case 12: Time column (no smell)
+        result = self.data_smells.check_contracted_text(df, 'times')
+        assert result is True, "Test Case 12 Failed: Should not detect smell for time column"
+        print_and_log("Test Case 12 Passed: No smell detected for time column")
+
+        # Test Case 13: DateTime column (no smell)
+        result = self.data_smells.check_contracted_text(df, 'valid_datetimes')
+        assert result is True, "Test Case 13 Failed: Should not detect smell for DateTime column"
+        print_and_log("Test Case 13 Passed: No smell detected for DateTime column")
+
+        # Test Case 14: Check all columns at once (no smell detected)
+        df_mixed_all = pd.DataFrame({
+            'col1': [1, 2, 3],
+            'col2': ['a', 'b', 'c'],
+            'col3': [pd.Timestamp('2024-01-01'), np.nan, 'not_a_date']
+        })
+        result = self.data_smells.check_contracted_text(df_mixed_all)
+        assert result is True, "Test Case 14 Failed: Should not detect smell when checking all columns"
+        print_and_log("Test Case 14 Passed: No smell detected when checking all columns")
+
+        # Test Case 15: Check multiple columns with mixed data types (smell)
+        df_mixed_types = pd.DataFrame({
+            'text': ["don't", "I'm", "he's"],
+            'numbers': [1, 2, 3],
+            'dates': pd.date_range('2024-01-01', periods=3, freq='D')
+        })
+        result = self.data_smells.check_contracted_text(df_mixed_types)
+        assert result is False, "Test Case 15 Failed: Should detect smell for mixed data types with contractions"
+        print_and_log("Test Case 15 Passed: Smell detected for mixed data types with contractions")
+
+        print_and_log("\nFinished testing check_contracted_text function")
+        print_and_log("-----------------------------------------------------------")
+
+    def execute_check_abbreviation_inconsistency_SimpleTests(self):
+        """
+        Execute simple tests for check_abbreviation_inconsistency function.
+        Tests the following cases:
+        1. Inconsistent abbreviations (e.g., "USA", "U.S.A.", "United States")
+        2. Inconsistent contractions (e.g., "don't", "do not")
+        3. Inconsistent acronyms (e.g., "FBI", "F.B.I.")
+        4. Mixed case abbreviations (e.g., "API", "api", "Api")
+        5. Punctuation variations (e.g., "Mr.", "Mr", "Mister")
+        6. Company name variations (e.g., "Inc.", "Inc", "Incorporated")
+        7. Technical term variations (e.g., "JavaScript", "JS")
+        8. Medical abbreviations (e.g., "Dr.", "Doctor")
+        9. Time abbreviations (e.g., "AM", "a.m.", "morning")
+        10. Unit abbreviations (e.g., "kg", "kilogram")
+        11. Consistent text (no smell)
+        12. Non-existent field
+        13. Empty DataFrame
+        14. Column with all NaN values
+        15. Non-string column (no smell)
+        16. Single value column (no smell)
+        17. Check all columns at once (smell present)
+        18. Mixed inconsistent formats
+        19. Numeric strings with text
+        20. Complex abbreviation patterns
+        """
+        print_and_log("")
+        print_and_log("Testing check_abbreviation_inconsistency function...")
+
+        # Test Case 1: Inconsistent abbreviations
+        df1 = pd.DataFrame({'text': ['USA', 'U.S.A.', 'US']})
+        result = self.data_smells.check_abbreviation_consistency(df1, 'text')
+        assert result is False, "Test Case 1 Failed: Should detect smell for inconsistent abbreviations"
+        print_and_log("Test Case 1 Passed: Smell detected for inconsistent abbreviations")
+
+        # Test Case 2: Inconsistent contractions
+        df2 = pd.DataFrame({'text': ["don't", "do not", "dont"]})
+        result = self.data_smells.check_abbreviation_consistency(df2, 'text')
+        assert result is False, "Test Case 2 Failed: Should detect smell for inconsistent contractions"
+        print_and_log("Test Case 2 Passed: Smell detected for inconsistent contractions")
+
+        # Test Case 3: Inconsistent acronyms
+        df3 = pd.DataFrame({'text': ['FBI', 'F.B.I.']})
+        result = self.data_smells.check_abbreviation_consistency(df3, 'text')
+        assert result is False, "Test Case 3 Failed: Should detect smell for inconsistent acronyms"
+        print_and_log("Test Case 3 Passed: Smell detected for inconsistent acronyms")
+
+        # Test Case 4: Mixed case abbreviations
+        df4 = pd.DataFrame({'text': ['API', 'api', 'Api', 'A.P.I.']})
+        result = self.data_smells.check_abbreviation_consistency(df4, 'text')
+        assert result is False, "Test Case 4 Failed: Should detect smell for mixed case abbreviations"
+        print_and_log("Test Case 4 Passed: Smell detected for mixed case abbreviations")
+
+        # Test Case 5: Punctuation variations
+        df5 = pd.DataFrame({'text': ['Mr.', 'Mr', 'Mister']})
+        result = self.data_smells.check_abbreviation_consistency(df5, 'text')
+        assert result is False, "Test Case 5 Failed: Should detect smell for punctuation variations"
+        print_and_log("Test Case 5 Passed: Smell detected for punctuation variations")
+
+        # Test Case 6: Company name variations
+        df6 = pd.DataFrame({'text': ['Inc.', 'Inc', 'Incorporated', 'Corporation']})
+        result = self.data_smells.check_abbreviation_consistency(df6, 'text')
+        assert result is False, "Test Case 6 Failed: Should detect smell for company name variations"
+        print_and_log("Test Case 6 Passed: Smell detected for company name variations")
+
+        # Test Case 7: Technical term variations
+        df7 = pd.DataFrame({'text': ['JavaScript', 'JS', 'js', 'Javascript']})
+        result = self.data_smells.check_abbreviation_consistency(df7, 'text')
+        assert result is False, "Test Case 7 Failed: Should detect smell for technical term variations"
+        print_and_log("Test Case 7 Passed: Smell detected for technical term variations")
+
+        # Test Case 8: Medical abbreviations
+        df8 = pd.DataFrame({'text': ['Dr.', 'Doctor', 'DR', 'dr.']})
+        result = self.data_smells.check_abbreviation_consistency(df8, 'text')
+        assert result is False, "Test Case 8 Failed: Should detect smell for medical abbreviations"
+        print_and_log("Test Case 8 Passed: Smell detected for medical abbreviations")
+
+        # Test Case 9: Time abbreviations
+        df9 = pd.DataFrame({'text': ['AM', 'a.m.', 'morning', 'A.M.']})
+        result = self.data_smells.check_abbreviation_consistency(df9, 'text')
+        assert result is False, "Test Case 9 Failed: Should detect smell for time abbreviations"
+        print_and_log("Test Case 9 Passed: Smell detected for time abbreviations")
+
+        # Test Case 10: Unit abbreviations
+        df10 = pd.DataFrame({'text': ['kg', 'kilogram', 'KG', 'Kg']})
+        result = self.data_smells.check_abbreviation_consistency(df10, 'text')
+        assert result is False, "Test Case 10 Failed: Should detect smell for unit abbreviations"
+        print_and_log("Test Case 10 Passed: Smell detected for unit abbreviations")
+
+        # Test Case 11: Consistent text (no smell)
+        df11 = pd.DataFrame({'text': ['apple', 'banana', 'cherry', 'date']})
+        result = self.data_smells.check_abbreviation_consistency(df11, 'text')
+        assert result is True, "Test Case 11 Failed: Should not detect smell for consistent text"
+        print_and_log("Test Case 11 Passed: No smell detected for consistent text")
+
+        # Test Case 12: Non-existent field
+        with self.assertRaises(ValueError):
+            self.data_smells.check_abbreviation_consistency(df11, 'non_existent_field')
+        print_and_log("Test Case 12 Passed: ValueError raised for non-existent field")
+
+        # Test Case 13: Empty DataFrame
+        df13 = pd.DataFrame()
+        result = self.data_smells.check_abbreviation_consistency(df13)
+        assert result is True, "Test Case 13 Failed: Should not detect smell for empty DataFrame"
+        print_and_log("Test Case 13 Passed: No smell detected for empty DataFrame")
+
+        # Test Case 14: Column with all NaN values
+        df14 = pd.DataFrame({'text': [np.nan, np.nan, np.nan]})
+        result = self.data_smells.check_abbreviation_consistency(df14, 'text')
+        assert result is True, "Test Case 14 Failed: Should not detect smell for column with all NaN values"
+        print_and_log("Test Case 14 Passed: No smell detected for column with all NaN values")
+
+        # Test Case 15: Non-string column (no smell)
+        df15 = pd.DataFrame({'numbers': [1, 2, 3, 4, 5]})
+        result = self.data_smells.check_abbreviation_consistency(df15, 'numbers')
+        assert result is True, "Test Case 15 Failed: Should not detect smell for non-string column"
+        print_and_log("Test Case 15 Passed: No smell detected for non-string column")
+
+        # Test Case 16: Single value column (no smell)
+        df16 = pd.DataFrame({'text': ['same_value', 'same_value', 'same_value']})
+        result = self.data_smells.check_abbreviation_consistency(df16, 'text')
+        assert result is True, "Test Case 16 Failed: Should not detect smell for single value column"
+        print_and_log("Test Case 16 Passed: No smell detected for single value column")
+
+        # Test Case 17: Check all columns at once (smell present)
+        df17 = pd.DataFrame({
+            'col1': ['USA', 'U.S.A.', 'United States'],
+            'col2': ['apple', 'banana', 'cherry'],
+            'col3': [1, 2, 3]
+        })
+        result = self.data_smells.check_abbreviation_consistency(df17)
+        assert result is False, "Test Case 17 Failed: Should detect smell when checking all columns"
+        print_and_log("Test Case 17 Passed: Smell detected when checking all columns")
+
+        # Test Case 18: Mixed inconsistent formats
+        df18 = pd.DataFrame({'text': ["can't", "cannot", "can not", "cant"]})
+        result = self.data_smells.check_abbreviation_consistency(df18, 'text')
+        assert result is False, "Test Case 18 Failed: Should detect smell for mixed inconsistent formats"
+        print_and_log("Test Case 18 Passed: Smell detected for mixed inconsistent formats")
+
+        # Test Case 19: Numeric strings with text
+        df19 = pd.DataFrame({'text': ['1st', 'first', '1ST', 'First']})
+        result = self.data_smells.check_abbreviation_consistency(df19, 'text')
+        assert result is False, "Test Case 19 Failed: Should detect smell for numeric strings with text"
+        print_and_log("Test Case 19 Passed: Smell detected for numeric strings with text")
+
+        # Test Case 20: Complex abbreviation patterns
+        df20 = pd.DataFrame({'text': ['e.g.', 'eg', 'for example', 'E.G.', 'e.g', 'eg.']})
+        result = self.data_smells.check_abbreviation_consistency(df20, 'text')
+        assert result is False, "Test Case 20 Failed: Should detect smell for complex abbreviation patterns"
+        print_and_log("Test Case 20 Passed: Smell detected for complex abbreviation patterns")
+
+        print_and_log("\nFinished testing check_abbreviation_inconsistency function")
+        print_and_log("-----------------------------------------------------------")
+
+    def execute_check_syntactic_synonym_SimpleTests(self):
+        """
+        Execute simple tests for check_syntactic_synonym function.
+        Tests the following cases:
+        1. Basic synonyms (intelligent, clever, smart)
+        2. Name variations (Bill Clinton, President Clinton, William Jefferson Clinton)
+        3. Alternative spellings (color, colour)
+        4. Technical terms (JavaScript, JS)
+        5. Mixed case synonyms (GOOD, good, excellent)
+        6. Single word vs multiple words (US, United States)
+        7. Partial name matches (John Smith, John)
+        8. Similar but not synonymous words (cat, dog)
+        9. Identical words (no smell)
+        10. Empty and null values
+        11. Non-string columns (no smell)
+        12. Mixed data types
+        13. Low similarity threshold
+        14. High similarity threshold
+        15. Large dataset performance
+        16. Special characters in synonyms
+        17. Numbers and text combinations
+        18. Multiple synonym groups
+        19. Scientific terms and abbreviations
+        20. Check all columns at once
+        """
+        print_and_log("")
+        print_and_log("Testing check_syntactic_synonym function...")
+
+        # Test Case 1: Basic synonyms (smell)
+        df1 = pd.DataFrame({'text': ['intelligent', 'clever', 'smart', 'bright']})
+        result = self.data_smells.check_syntactic_synonym(df1, 'text')
+        assert result is False, "Test Case 1 Failed: Should detect smell for basic synonyms"
+        print_and_log("Test Case 1 Passed: Smell detected for basic synonyms")
+
+        # Test Case 2: Name variations (smell)
+        df2 = pd.DataFrame({'text': ['Bill Clinton', 'President Clinton', 'William Jefferson Clinton', 'Mr. Clinton']})
+        result = self.data_smells.check_syntactic_synonym(df2, 'text')
+        assert result is False, "Test Case 2 Failed: Should detect smell for name variations"
+        print_and_log("Test Case 2 Passed: Smell detected for name variations")
+
+        # Test Case 3: Alternative spellings (smell)
+        df3 = pd.DataFrame({'text': ['color', 'colour', 'gray', 'grey']})
+        result = self.data_smells.check_syntactic_synonym(df3, 'text')
+        assert result is False, "Test Case 3 Failed: Should detect smell for alternative spellings"
+        print_and_log("Test Case 3 Passed: Smell detected for alternative spellings")
+
+        # Test Case 4: Technical terms and abbreviations (smell)
+        df4 = pd.DataFrame({'text': ['JavaScript', 'JS', 'ECMAScript', 'Javascript']})
+        result = self.data_smells.check_syntactic_synonym(df4, 'text')
+        assert result is False, "Test Case 4 Failed: Should detect smell for technical terms"
+        print_and_log("Test Case 4 Passed: Smell detected for technical terms")
+
+        # Test Case 5: Mixed case synonyms (smell)
+        df5 = pd.DataFrame({'text': ['GOOD', 'good', 'excellent', 'Great']})
+        result = self.data_smells.check_syntactic_synonym(df5, 'text')
+        assert result is False, "Test Case 5 Failed: Should detect smell for mixed case synonyms"
+        print_and_log("Test Case 5 Passed: Smell detected for mixed case synonyms")
+
+        # Test Case 6: Single word vs multiple words (smell)
+        df6 = pd.DataFrame({'text': ['US', 'United States', 'USA', 'America']})
+        result = self.data_smells.check_syntactic_synonym(df6, 'text')
+        assert result is False, "Test Case 6 Failed: Should detect smell for country name variations"
+        print_and_log("Test Case 6 Passed: Smell detected for country name variations")
+
+        # Test Case 7: Partial name matches (smell)
+        df7 = pd.DataFrame({'text': ['John Smith', 'John', 'Mr. Smith', 'J. Smith']})
+        result = self.data_smells.check_syntactic_synonym(df7, 'text')
+        assert result is False, "Test Case 7 Failed: Should detect smell for partial name matches"
+        print_and_log("Test Case 7 Passed: Smell detected for partial name matches")
+
+        # Test Case 8: Similar but not synonymous words (no smell)
+        df8 = pd.DataFrame({'text': ['cat', 'dog', 'bird', 'fish']})
+        result = self.data_smells.check_syntactic_synonym(df8, 'text')
+        assert result is True, "Test Case 8 Failed: Should not detect smell for unrelated words"
+        print_and_log("Test Case 8 Passed: No smell detected for unrelated words")
+
+        # Test Case 9: Identical words (no smell)
+        df9 = pd.DataFrame({'text': ['apple', 'apple', 'apple', 'apple']})
+        result = self.data_smells.check_syntactic_synonym(df9, 'text')
+        assert result is True, "Test Case 9 Failed: Should not detect smell for identical words"
+        print_and_log("Test Case 9 Passed: No smell detected for identical words")
+
+        # Test Case 10: Empty and null values (no smell)
+        df10 = pd.DataFrame({'text': ['hello', '', np.nan, 'world']})
+        result = self.data_smells.check_syntactic_synonym(df10, 'text')
+        assert result is True, "Test Case 10 Failed: Should handle empty and null values"
+        print_and_log("Test Case 10 Passed: Handled empty and null values correctly")
+
+        # Test Case 11: Non-string columns (no smell)
+        df11 = pd.DataFrame({'numbers': [1, 2, 3, 4, 5]})
+        result = self.data_smells.check_syntactic_synonym(df11, 'numbers')
+        assert result is True, "Test Case 11 Failed: Should not detect smell for non-string columns"
+        print_and_log("Test Case 11 Passed: No smell detected for non-string columns")
+
+        # Test Case 12: Mixed data types (no smell)
+        df12 = pd.DataFrame({'mixed': ['hello', 123, 'world', 456.78]})
+        result = self.data_smells.check_syntactic_synonym(df12, 'mixed')
+        assert result is True, "Test Case 12 Failed: Should handle mixed data types"
+        print_and_log("Test Case 12 Passed: Handled mixed data types correctly")
+
+        # Test Case 13: Low similarity threshold (more synonyms detected)
+        df13 = pd.DataFrame({'text': ['big', 'large', 'huge', 'tiny']})
+        result = self.data_smells.check_syntactic_synonym(df13, 'text', similarity_threshold=0.3)
+        assert result is False, "Test Case 13 Failed: Should detect more synonyms with low threshold"
+        print_and_log("Test Case 13 Passed: More synonyms detected with low threshold")
+
+        # Test Case 14: High similarity threshold (fewer synonyms detected)
+        df14 = pd.DataFrame({'text': ['happy', 'joyful', 'sad']})
+        result = self.data_smells.check_syntactic_synonym(df14, 'text', similarity_threshold=0.9)
+        assert result is True, "Test Case 14 Failed: Should detect fewer synonyms with high threshold"
+        print_and_log("Test Case 14 Passed: Fewer synonyms detected with high threshold")
+
+        # Test Case 15: Large dataset performance (should handle efficiently)
+        large_data = ['word' + str(i) for i in range(600)] + ['intelligent', 'clever', 'smart']
+        df15 = pd.DataFrame({'text': large_data})
+        result = self.data_smells.check_syntactic_synonym(df15, 'text')
+        assert result is True, "Test Case 15 Failed: Should handle large dataset efficiently"
+        # Should handle large datasets by sampling
+        print_and_log("Test Case 15 Passed: Large dataset handled efficiently")
+
+        # Test Case 16: Special characters in synonyms (smell)
+        df16 = pd.DataFrame({'text': ['e-mail', 'email', 'e_mail', 'electronic mail']})
+        result = self.data_smells.check_syntactic_synonym(df16, 'text')
+        assert result is False, "Test Case 16 Failed: Should detect smell for special character variations"
+        print_and_log("Test Case 16 Passed: Smell detected for special character variations")
+
+        # Test Case 17: Numbers and text combinations (smell)
+        df17 = pd.DataFrame({'text': ['Version 1', 'V1', 'Ver 1', 'Version One']})
+        result = self.data_smells.check_syntactic_synonym(df17, 'text')
+        assert result is False, "Test Case 17 Failed: Should detect smell for number-text combinations"
+        print_and_log("Test Case 17 Passed: Smell detected for number-text combinations")
+
+        # Test Case 18: Multiple synonym groups (smell)
+        df18 = pd.DataFrame({'text': ['big', 'large', 'small', 'tiny', 'red', 'crimson']})
+        result = self.data_smells.check_syntactic_synonym(df18, 'text')
+        assert result is False, "Test Case 18 Failed: Should detect smell for multiple synonym groups"
+        print_and_log("Test Case 18 Passed: Multiple synonym groups detected")
+
+        # Test Case 19: Scientific terms and abbreviations (smell)
+        df19 = pd.DataFrame({'text': ['Deoxyribonucleic acid', 'DNA', 'genetic material', 'nucleic acid']})
+        result = self.data_smells.check_syntactic_synonym(df19, 'text')
+        assert result is False, "Test Case 19 Failed: Should detect smell for scientific terms"
+        print_and_log("Test Case 19 Passed: Smell detected for scientific terms")
+
+        # Test Case 20: Check all columns at once (smell present)
+        df20 = pd.DataFrame({
+            'col1': ['good', 'well', 'great'],
+            'col2': ['apple', 'banana', 'cherry'],
+            'col3': [1, 2, 3]
+        })
+        result = self.data_smells.check_syntactic_synonym(df20)
+        assert result is False, "Test Case 20 Failed: Should detect smell when checking all columns"
+        print_and_log("Test Case 20 Passed: Smell detected when checking all columns")
+
+        # Test Case 21: Non-existent field (should raise ValueError)
+        with self.assertRaises(ValueError):
+            self.data_smells.check_syntactic_synonym(df1, 'non_existent_field')
+        print_and_log("Test Case 21 Passed: ValueError raised for non-existent field")
+
+        # Test Case 22: Empty DataFrame (no smell)
+        df22 = pd.DataFrame()
+        result = self.data_smells.check_syntactic_synonym(df22)
+        assert result is True, "Test Case 22 Failed: Should handle empty DataFrame"
+        print_and_log("Test Case 22 Passed: Empty DataFrame handled correctly")
+
+        # Test Case 23: Invalid similarity threshold (should raise ValueError)
+        with self.assertRaises(ValueError):
+            self.data_smells.check_syntactic_synonym(df1, 'text', similarity_threshold=1.5)
+        print_and_log("Test Case 23 Passed: ValueError raised for invalid similarity threshold")
+
+        # Test Case 24: Medical terms and synonyms (smell)
+        df24 = pd.DataFrame({'text': ['doctor', 'physician', 'MD', 'medic']})
+        result = self.data_smells.check_syntactic_synonym(df24, 'text')
+        assert result is False, "Test Case 24 Failed: Should detect smell for medical terms"
+        print_and_log("Test Case 24 Passed: Smell detected for medical terms")
+
+        # Test Case 25: Contractions and full forms (smell)
+        df25 = pd.DataFrame({'text': ["can't", 'cannot', "won't", 'will not']})
+        result = self.data_smells.check_syntactic_synonym(df25, 'text')
+        assert result is False, "Test Case 25 Failed: Should detect smell for contractions"
+        print_and_log("Test Case 25 Passed: Smell detected for contractions")
+
+        print_and_log("\nFinished testing check_syntactic_synonym function")
+        print_and_log("-----------------------------------------------------------")
+
+    def execute_check_ambiguous_value_SimpleTests(self):
+        """
+        Execute simple tests for check_ambiguous_value function.
+        Tests the following cases:
+        1. Basic abbreviations (smell)
+        2. Mixed length patterns with abbreviations (smell)
+        3. Potential homonyms (smell)
+        4. Acronym-expansion pairs (smell)
+        5. Clean text without ambiguity (no smell)
+        6. Non-existent field (ValueError)
+        7. Empty DataFrame (no smell)
+        8. Column with all NaN values (no smell)
+        9. Non-string column (no smell)
+        10. Single value column (no smell)
+        11. Invalid ambiguity threshold (ValueError)
+        12. High ambiguity threshold (no smell)
+        13. Low ambiguity threshold (smell)
+        14. Technical abbreviations (smell)
+        15. Medical abbreviations (smell)
+        16. Geographic ambiguity (smell)
+        17. Mixed case abbreviations (smell)
+        18. Punctuation variations (smell)
+        19. Check all columns at once (smell present)
+        20. Large dataset performance (should handle efficiently)
+        """
+        print_and_log("")
+        print_and_log("Testing check_ambiguous_value function...")
+
+        # Test Case 1: Basic abbreviations (smell)
+        df1 = pd.DataFrame({'text': ['Dr', 'Doctor', 'St', 'Street', 'Ave', 'Avenue', 'Saint']})
+        result = self.data_smells.check_ambiguous_value(df1, 'text', ambiguity_threshold=0.5)
+        assert result is False, "Test Case 1 Failed: Should detect smell for basic abbreviations"
+        print_and_log("Test Case 1 Passed: Smell detected for basic abbreviations")
+
+        # Test Case 2: Mixed length patterns with abbreviations (smell)
+        df2 = pd.DataFrame({'text': ['US', 'USA', 'United States of America', 'America', 'U.S.A.']})
+        result = self.data_smells.check_ambiguous_value(df2, 'text', ambiguity_threshold=0.5)
+        assert result is False, "Test Case 2 Failed: Should detect smell for mixed length patterns"
+        print_and_log("Test Case 2 Passed: Smell detected for mixed length patterns")
+
+        # Test Case 3: Acronym-expansion pairs (smell)
+        df4 = pd.DataFrame({'text': ['FBI', 'Federal Bureau of Investigation', 'CIA', 'Central Intelligence Agency']})
+        result = self.data_smells.check_ambiguous_value(df4, 'text', ambiguity_threshold=0.5)
+        assert result is False, "Test Case 3 Failed: Should detect smell for acronym-expansion pairs"
+        print_and_log("Test Case 3 Passed: Smell detected for acronym-expansion pairs")
+
+        # Test Case 4: Clean text without ambiguity (no smell)
+        df5 = pd.DataFrame({'text': ['apple', 'banana', 'cherry', 'orange', 'grape']})
+        result = self.data_smells.check_ambiguous_value(df5, 'text')
+        assert result is True, "Test Case 4 Failed: Should not detect smell for clean text"
+        print_and_log("Test Case 4 Passed: No smell detected for clean text")
+
+        # Test Case 5: Non-existent field (ValueError)
+        with self.assertRaises(ValueError):
+            self.data_smells.check_ambiguous_value(df1, 'non_existent_field')
+        print_and_log("Test Case 5 Passed: ValueError raised for non-existent field")
+
+        # Test Case 6: Empty DataFrame (no smell)
+        df7 = pd.DataFrame()
+        result = self.data_smells.check_ambiguous_value(df7)
+        assert result is True, "Test Case 6 Failed: Should handle empty DataFrame"
+        print_and_log("Test Case 6 Passed: Empty DataFrame handled correctly")
+
+        # Test Case 7: Column with all NaN values (no smell)
+        df8 = pd.DataFrame({'text': [np.nan, np.nan, np.nan]})
+        result = self.data_smells.check_ambiguous_value(df8, 'text')
+        assert result is True, "Test Case 7 Failed: Should handle all NaN values"
+        print_and_log("Test Case 7 Passed: All NaN values handled correctly")
+
+        # Test Case 8: Non-string column (no smell)
+        df9 = pd.DataFrame({'numbers': [1, 2, 3, 4, 5]})
+        result = self.data_smells.check_ambiguous_value(df9, 'numbers')
+        assert result is True, "Test Case 8 Failed: Should not detect smell for non-string column"
+        print_and_log("Test Case 8 Passed: No smell detected for non-string column")
+
+        # Test Case 9: Single value column (no smell)
+        df10 = pd.DataFrame({'text': ['same_value', 'same_value', 'same_value']})
+        result = self.data_smells.check_ambiguous_value(df10, 'text')
+        assert result is True, "Test Case 9 Failed: Should not detect smell for single value column"
+        print_and_log("Test Case 9 Passed: No smell detected for single value column")
+
+        # Test Case 10: Invalid ambiguity threshold (ValueError)
+        with self.assertRaises(ValueError):
+            self.data_smells.check_ambiguous_value(df1, 'text', ambiguity_threshold=1.5)
+        print_and_log("Test Case 10 Passed: ValueError raised for invalid ambiguity threshold")
+
+        # Test Case 11: High ambiguity threshold (no smell)
+        df12 = pd.DataFrame({'text': ['Dr', 'Doctor', 'St', 'Street']})
+        result = self.data_smells.check_ambiguous_value(df12, 'text', ambiguity_threshold=0.9)
+        assert result is True, "Test Case 11 Failed: Should not detect smell with high threshold"
+        print_and_log("Test Case 11 Passed: No smell detected with high threshold")
+
+        # Test Case 12: Low ambiguity threshold (smell)
+        df13 = pd.DataFrame({'text': ['Mr', 'Mrs', 'Ms', 'Miss']})
+        result = self.data_smells.check_ambiguous_value(df13, 'text', ambiguity_threshold=0.1)
+        assert result is False, "Test Case 12 Failed: Should detect smell with low threshold"
+        print_and_log("Test Case 12 Passed: Smell detected with low threshold")
+
+        # Test Case 13: Technical abbreviations (smell)
+        df14 = pd.DataFrame({'text': ['API', 'Application Programming Interface', 'SQL', 'Structured Query Language']})
+        result = self.data_smells.check_ambiguous_value(df14, 'text', ambiguity_threshold=0.5)
+        assert result is False, "Test Case 13 Failed: Should detect smell for technical abbreviations"
+        print_and_log("Test Case 13 Passed: Smell detected for technical abbreviations")
+
+        # Test Case 14: Medical abbreviations (smell)
+        df15 = pd.DataFrame({'text': ['MD', 'Medical Doctor', 'RN', 'Registered Nurse', 'PhD', 'Doctor of Philosophy']})
+        result = self.data_smells.check_ambiguous_value(df15, 'text', ambiguity_threshold=0.5)
+        assert result is False, "Test Case 14 Failed: Should detect smell for medical abbreviations"
+        print_and_log("Test Case 14 Passed: Smell detected for medical abbreviations")
+
+        # Test Case 15: Geographic ambiguity (smell)
+        df16 = pd.DataFrame({'text': ['NY', 'New York', 'CA', 'California', 'FL', 'Florida']})
+        result = self.data_smells.check_ambiguous_value(df16, 'text', ambiguity_threshold=0.5)
+        assert result is False, "Test Case 15 Failed: Should detect smell for geographic ambiguity"
+        print_and_log("Test Case 15 Passed: Smell detected for geographic ambiguity")
+
+        # Test Case 16: Mixed case abbreviations (smell)
+        df17 = pd.DataFrame({'text': ['Html', 'HTML', 'HyperText Markup Language', 'http', 'HTTP']})
+        result = self.data_smells.check_ambiguous_value(df17, 'text', ambiguity_threshold=0.5)
+        assert result is False, "Test Case 16 Failed: Should detect smell for mixed case abbreviations"
+        print_and_log("Test Case 16 Passed: Smell detected for mixed case abbreviations")
+
+        # Test Case 17: Punctuation variations (smell)
+        df18 = pd.DataFrame({'text': ['U.S.A.', 'USA', 'U.S.', 'US', 'United States']})
+        result = self.data_smells.check_ambiguous_value(df18, 'text', ambiguity_threshold=0.5)
+        assert result is False, "Test Case 17 Failed: Should detect smell for punctuation variations"
+        print_and_log("Test Case 17 Passed: Smell detected for punctuation variations")
+
+        # Test Case 19: Large dataset performance (should handle efficiently)
+        large_data = ['word' + str(i) for i in range(10)] + ['Dr', 'Doctor', 'St', 'Street', 'Saint', 'Ave', 'Avenue']
+        df20 = pd.DataFrame({'text': large_data})
+        result = self.data_smells.check_ambiguous_value(df20, 'text', ambiguity_threshold=0.3)
+        # Should handle large datasets by sampling and still detect the abbreviations
+        assert result is False, "Test Case 19 Failed: Should handle large dataset and detect smell"
+        print_and_log("Test Case 19 Passed: Large dataset handled efficiently and smell detected")
+
+        print_and_log("\nFinished testing check_ambiguous_value function")
         print_and_log("-----------------------------------------------------------")

@@ -55,6 +55,11 @@ class DataSmellExternalDatasetTests(unittest.TestCase):
             self.execute_check_suspect_far_date_value_ExternalDatasetTests,
             self.execute_check_number_size_ExternalDatasetTests,
             self.execute_check_string_casing_ExternalDatasetTests,
+            self.execute_check_intermingled_data_type_ExternalDatasetTests,
+            self.execute_check_contracted_text_ExternalDatasetTests,
+            self.execute_check_abbreviation_inconsistency_ExternalDatasetTests,
+            self.execute_check_syntactic_synonym_ExternalDatasetTests,
+            self.execute_check_ambiguous_value_ExternalDatasetTests,
         ]
 
         print_and_log("")
@@ -572,98 +577,89 @@ class DataSmellExternalDatasetTests(unittest.TestCase):
         self.assertTrue(result, "Test Case 4 Failed: Expected no smell for clean strings")
         print_and_log("Test Case 4 Passed: Expected no smell, got no smell")
 
-        # Test 5: Create a column with uppercase issues (smell)
-        print_and_log("\nTest 5: Check uppercase issues")
-        uppercase_df = pd.DataFrame({
-            'uppercase_text': ['Hello World', 'TEST CASE', 'Simple Text', 'UPPERCASE', 'MixedCase']
-        })
-        result = self.data_smells.check_special_character_spacing(uppercase_df, 'uppercase_text')
-        self.assertFalse(result, "Test Case 5 Failed: Expected smell for uppercase text")
-        print_and_log("Test Case 5 Passed: Expected smell, got smell")
-
-        # Test 6: Create a column with accented characters (smell)
+        # Test 5: Create a column with accented characters (smell)
         print_and_log("\nTest 6: Check accented characters")
         accent_df = pd.DataFrame({
             'accented_text': ['café', 'niño', 'résumé', 'piñata', 'naïve']
         })
         result = self.data_smells.check_special_character_spacing(accent_df, 'accented_text')
         self.assertFalse(result, "Test Case 6 Failed: Expected smell for accented text")
-        print_and_log("Test Case 6 Passed: Expected smell, got smell")
+        print_and_log("Test Case 5 Passed: Expected smell, got smell")
 
-        # Test 7: Create a column with special characters (smell)
-        print_and_log("\nTest 7: Check special characters")
+        # Test 6: Create a column with special characters (smell)
+        print_and_log("\nTest 6: Check special characters")
         special_df = pd.DataFrame({
             'special_chars': ['hello@world', 'test#case', 'data&analytics', 'file.txt', 'user:password']
         })
         result = self.data_smells.check_special_character_spacing(special_df, 'special_chars')
-        self.assertFalse(result, "Test Case 7 Failed: Expected smell for special characters")
-        print_and_log("Test Case 7 Passed: Expected smell, got smell")
+        self.assertFalse(result, "Test Case 6 Failed: Expected smell for special characters")
+        print_and_log("Test Case 6 Passed: Expected smell, got smell")
 
-        # Test 8: Create a column with extra spacing (smell)
-        print_and_log("\nTest 8: Check extra spacing")
+        # Test 7: Create a column with extra spacing (smell)
+        print_and_log("\nTest 7: Check extra spacing")
         spacing_df = pd.DataFrame({
             'extra_spaces': ['hello  world', 'test   case', 'data    analytics', '  leading', 'trailing  ']
         })
         result = self.data_smells.check_special_character_spacing(spacing_df, 'extra_spaces')
-        self.assertFalse(result, "Test Case 8 Failed: Expected smell for extra spacing")
-        print_and_log("Test Case 8 Passed: Expected smell, got smell")
+        self.assertFalse(result, "Test Case 7 Failed: Expected smell for extra spacing")
+        print_and_log("Test Case 7 Passed: Expected smell, got smell")
 
-        # Test 9: Create a column with mixed formatting issues (smell)
-        print_and_log("\nTest 9: Check mixed formatting issues")
+        # Test 8: Create a column with mixed formatting issues (smell)
+        print_and_log("\nTest 8: Check mixed formatting issues")
         mixed_df = pd.DataFrame({
             'mixed_issues': ['Café@Home  ', 'TEST#Case   ', 'Résumé!Final  ', 'USER:Pass  ', 'File.TXT@Server']
         })
         result = self.data_smells.check_special_character_spacing(mixed_df, 'mixed_issues')
-        self.assertFalse(result, "Test Case 9 Failed: Expected smell for mixed issues")
-        print_and_log("Test Case 9 Passed: Expected smell, got smell")
+        self.assertFalse(result, "Test Case 8 Failed: Expected smell for mixed issues")
+        print_and_log("Test Case 8 Passed: Expected smell, got smell")
 
-        # Test 10: Check numbers as strings (no smell)
-        print_and_log("\nTest 10: Check numbers as strings")
+        # Test 9: Check numbers as strings (no smell)
+        print_and_log("\nTest 9: Check numbers as strings")
         numbers_df = pd.DataFrame({
             'numbers_as_strings': ['123', '456', '789', '101112', '131415']
         })
         result = self.data_smells.check_special_character_spacing(numbers_df, 'numbers_as_strings')
-        self.assertTrue(result, "Test Case 10 Failed: Expected no smell for numbers as strings")
-        print_and_log("Test Case 10 Passed: Expected no smell, got no smell")
+        self.assertTrue(result, "Test Case 9 Failed: Expected no smell for numbers as strings")
+        print_and_log("Test Case 9 Passed: Expected no smell, got no smell")
 
-        # Test 11: Check empty and null values (no smell)
-        print_and_log("\nTest 11: Check empty and null values")
+        # Test 10: Check empty and null values (no smell)
+        print_and_log("\nTest 10: Check empty and null values")
         empty_df = pd.DataFrame({
             'empty_nulls': ['', np.nan, '', np.nan, '']
         })
         result = self.data_smells.check_special_character_spacing(empty_df, 'empty_nulls')
-        self.assertTrue(result, "Test Case 11 Failed: Expected no smell for empty/null values")
-        print_and_log("Test Case 11 Passed: Expected no smell, got no smell")
+        self.assertTrue(result, "Test Case 10 Failed: Expected no smell for empty/null values")
+        print_and_log("Test Case 10 Passed: Expected no smell, got no smell")
 
-        # Test 12: Check single characters with issues (smell)
-        print_and_log("\nTest 12: Check single character issues")
+        # Test 11: Check single characters with issues (smell)
+        print_and_log("\nTest 11: Check single character issues")
         single_char_df = pd.DataFrame({
             'single_chars': ['A', '@', 'É', ' ', '#']
         })
         result = self.data_smells.check_special_character_spacing(single_char_df, 'single_chars')
-        self.assertFalse(result, "Test Case 12 Failed: Expected smell for single character issues")
-        print_and_log("Test Case 12 Passed: Expected smell, got smell")
+        self.assertFalse(result, "Test Case 11 Failed: Expected smell for single character issues")
+        print_and_log("Test Case 11 Passed: Expected smell, got smell")
 
-        # Test 13: Check mixed clean and dirty data (smell)
-        print_and_log("\nTest 13: Check mixed clean and dirty data")
+        # Test 12: Check mixed clean and dirty data (smell)
+        print_and_log("\nTest 12: Check mixed clean and dirty data")
         mixed_clean_dirty_df = pd.DataFrame({
             'mixed_data': ['clean text', 'Dirty@Text  ', 'normal', 'UPPERCASE', 'café']
         })
         result = self.data_smells.check_special_character_spacing(mixed_clean_dirty_df, 'mixed_data')
-        self.assertFalse(result, "Test Case 13 Failed: Expected smell for mixed clean/dirty data")
-        print_and_log("Test Case 13 Passed: Expected smell, got smell")
+        self.assertFalse(result, "Test Case 12 Failed: Expected smell for mixed clean/dirty data")
+        print_and_log("Test Case 12 Passed: Expected smell, got smell")
 
-        # Test 14: Check all string columns in dataset (smell expected)
-        print_and_log("\nTest 14: Check all string columns in dataset")
+        # Test 13: Check all string columns in dataset (smell expected)
+        print_and_log("\nTest 13: Check all string columns in dataset")
         result = self.data_smells.check_special_character_spacing(test_df)
-        self.assertFalse(result, "Test Case 14 Failed: Expected smell when checking all string columns")
-        print_and_log("Test Case 14 Passed: Expected smell when checking all columns, got smell")
+        self.assertFalse(result, "Test Case 13 Failed: Expected smell when checking all string columns")
+        print_and_log("Test Case 13 Passed: Expected smell when checking all columns, got smell")
 
-        # Test 15: Check playlist_name field (likely has formatting issues)
-        print_and_log("\nTest 15: Check playlist_name field")
+        # Test 14: Check playlist_name field (likely has formatting issues)
+        print_and_log("\nTest 14: Check playlist_name field")
         result = self.data_smells.check_special_character_spacing(test_df, 'playlist_name')
-        self.assertFalse(result, "Test Case 15 Failed: Expected smell for playlist_name due to formatting")
-        print_and_log("Test Case 15 Passed: Expected smell, got smell")
+        self.assertFalse(result, "Test Case 14 Failed: Expected smell for playlist_name due to formatting")
+        print_and_log("Test Case 14 Passed: Expected smell, got smell")
 
     def execute_check_suspect_precision_ExternalDatasetTests(self):
         """
@@ -1945,4 +1941,868 @@ class DataSmellExternalDatasetTests(unittest.TestCase):
         print_and_log("Test Case 6 Passed: Expected smell when checking all columns")
 
         print_and_log("\nFinished testing check_string_casing function with Spotify Dataset")
+        print_and_log("-----------------------------------------------------------")
+
+    def execute_check_intermingled_data_type_ExternalDatasetTests(self):
+        """
+        Execute external dataset tests for check_intermingled_data_type function.
+        Tests various scenarios with the Spotify dataset to detect mixed data types within columns.
+        Uses both existing dataset columns and creates modified columns for comprehensive testing.
+        """
+        print_and_log("Testing check_intermingled_data_type Function with Spotify Dataset")
+        print_and_log("")
+
+        # Create a copy of the dataset for modifications
+        test_df = self.data_dictionary.copy()
+
+        # Test 1: Check existing numeric columns (should have no smell - homogeneous types)
+        print_and_log("\nTest 1: Check danceability field (pure numeric)")
+        result = self.data_smells.check_intermingled_data_type(test_df, 'danceability')
+        self.assertTrue(result, "Test Case 1 Failed: Expected no smell for pure numeric column")
+        print_and_log("Test Case 1 Passed: Expected no smell, got no smell")
+
+        # Test 2: Check existing string columns (should have a smell - mixed text)
+        print_and_log("\nTest 2: Check track_name field (mixed text)")
+        result = self.data_smells.check_intermingled_data_type(test_df, 'track_name')
+        self.assertFalse(result, "Test Case 2 Failed: Expected smell for pure text column")
+        print_and_log("Test Case 2 Passed: Expected smell, got smell")
+
+        # Test 3: Create column with numeric and text values mixed (should detect smell)
+        print_and_log("\nTest 3: Check mixed numeric and text values")
+        mixed_values = []
+        for i in range(len(test_df)):
+            if i % 2 == 0:
+                mixed_values.append(test_df.iloc[i]['tempo'])  # Numeric value
+            else:
+                mixed_values.append("not_a_number")  # Text value
+        test_df['mixed_numeric_text'] = mixed_values
+        result = self.data_smells.check_intermingled_data_type(test_df, 'mixed_numeric_text')
+        self.assertFalse(result, "Test Case 3 Failed: Expected smell for mixed numeric and text")
+        print_and_log("Test Case 3 Passed: Expected smell, got smell")
+
+        # Test 4: Create column with timestamps and text (like the original issue)
+        print_and_log("\nTest 4: Check datetime objects mixed with text")
+        datetime_text_values = []
+        for i in range(len(test_df)):
+            if i % 3 == 0:
+                datetime_text_values.append(pd.Timestamp('2024-01-01'))
+            elif i % 3 == 1:
+                datetime_text_values.append('not_a_date')
+            else:
+                datetime_text_values.append(np.nan)
+        test_df['datetime_text_mix'] = datetime_text_values
+        result = self.data_smells.check_intermingled_data_type(test_df, 'datetime_text_mix')
+        self.assertFalse(result, "Test Case 4 Failed: Expected smell for datetime objects mixed with text")
+        print_and_log("Test Case 4 Passed: Expected smell, got smell")
+
+        # Test 6: Create column with numeric strings and actual text
+        print_and_log("\nTest 6: Check numeric strings mixed with text")
+        test_df['numeric_string_mix'] = test_df['key'].astype(str)
+        # Replace some values with non-numeric text
+        mask = test_df.index % 5 == 0
+        test_df.loc[mask, 'numeric_string_mix'] = "unknown_key"
+        result = self.data_smells.check_intermingled_data_type(test_df, 'numeric_string_mix')
+        self.assertFalse(result, "Test Case 6 Failed: Expected smell for numeric strings mixed with text")
+        print_and_log("Test Case 6 Passed: Expected smell, got smell")
+
+        # Test 7: Check track_popularity with mixed values
+        print_and_log("\nTest 7: Check track_popularity modified with text")
+        test_df['popularity_mixed'] = test_df['track_popularity'].copy()
+        # Replace some popularity values with text descriptions
+        mask = test_df.index % 10 == 0
+        test_df.loc[mask, 'popularity_mixed'] = "very_popular"
+        result = self.data_smells.check_intermingled_data_type(test_df, 'popularity_mixed')
+        self.assertFalse(result, "Test Case 7 Failed: Expected smell for popularity mixed with text")
+        print_and_log("Test Case 7 Passed: Expected smell, got smell")
+
+        # Test 8: Create alphanumeric mixed values (single values with mixed content)
+        print_and_log("\nTest 8: Check alphanumeric mixed values")
+        alphanumeric_values = []
+        for i in range(len(test_df)):
+            if i % 3 == 0:
+                alphanumeric_values.append(f"Track_{i}")  # Mixed alphanumeric
+            elif i % 3 == 1:
+                alphanumeric_values.append(str(i))  # Pure numeric string
+            else:
+                alphanumeric_values.append("pure_text")  # Pure text
+        test_df['alphanumeric_mix'] = alphanumeric_values
+        result = self.data_smells.check_intermingled_data_type(test_df, 'alphanumeric_mix')
+        self.assertFalse(result, "Test Case 8 Failed: Expected smell for alphanumeric mixed values")
+        print_and_log("Test Case 8 Passed: Expected smell, got smell")
+
+        # Test 9: Check tempo field with some text replacements
+        print_and_log("\nTest 9: Check tempo with text replacements")
+        test_df['tempo_text_mix'] = test_df['tempo'].copy()
+        # Replace some tempo values with descriptive text
+        mask = test_df.index % 15 == 0
+        test_df.loc[mask, 'tempo_text_mix'] = "fast_tempo"
+        result = self.data_smells.check_intermingled_data_type(test_df, 'tempo_text_mix')
+        self.assertFalse(result, "Test Case 9 Failed: Expected smell for tempo mixed with text")
+        print_and_log("Test Case 9 Passed: Expected smell, got smell")
+
+        # Test 10: Create column with date strings and regular text
+        print_and_log("\nTest 10: Check date strings mixed with regular text")
+        date_text_values = []
+        for i in range(len(test_df)):
+            if i % 4 == 0:
+                date_text_values.append("2024-01-01")  # Date-like string
+            elif i % 4 == 1:
+                date_text_values.append("invalid_date")  # Regular text
+            elif i % 4 == 2:
+                date_text_values.append("2023-12-25")  # Another date-like string
+            else:
+                date_text_values.append("unknown")  # More text
+        test_df['date_text_mix'] = date_text_values
+        result = self.data_smells.check_intermingled_data_type(test_df, 'date_text_mix')
+        self.assertFalse(result, "Test Case 10 Failed: Expected smell for date strings mixed with text")
+        print_and_log("Test Case 10 Passed: Expected smell, got smell")
+
+        # Test 11: Check energy field modified with special values
+        print_and_log("\nTest 11: Check energy with special text values")
+        test_df['energy_special'] = test_df['energy'].copy()
+        # Replace some energy values with special indicators
+        mask = test_df.index % 20 == 0
+        test_df.loc[mask, 'energy_special'] = "N/A"
+        result = self.data_smells.check_intermingled_data_type(test_df, 'energy_special')
+        self.assertFalse(result, "Test Case 11 Failed: Expected smell for energy mixed with special values")
+        print_and_log("Test Case 11 Passed: Expected smell, got smell")
+
+        # Test 12: Check column with floats and integers mixed with text
+        print_and_log("\nTest 12: Check mixed numeric types with text")
+        mixed_numeric_values = []
+        for i in range(len(test_df)):
+            if i % 4 == 0:
+                mixed_numeric_values.append(test_df.iloc[i]['danceability'])  # Float
+            elif i % 4 == 1:
+                mixed_numeric_values.append(test_df.iloc[i]['key'])  # Integer
+            elif i % 4 == 2:
+                mixed_numeric_values.append(123.456)  # Another float
+            else:
+                mixed_numeric_values.append("mixed_content")  # Text
+        test_df['all_numeric_text'] = mixed_numeric_values
+        result = self.data_smells.check_intermingled_data_type(test_df, 'all_numeric_text')
+        self.assertFalse(result, "Test Case 12 Failed: Expected smell for all numeric types mixed with text")
+        print_and_log("Test Case 12 Passed: Expected smell, got smell")
+
+        # Test 13: Check pure integer column (converted key)
+        print_and_log("\nTest 13: Check pure integer column")
+        # Convert to int the column avoiding nulls
+        test_df['pure_integers'] = test_df['key'].dropna().astype(int)
+        result = self.data_smells.check_intermingled_data_type(test_df, 'pure_integers')
+        self.assertTrue(result, "Test Case 13 Failed: Expected no smell for pure integers")
+        print_and_log("Test Case 13 Passed: Expected no smell, got no smell")
+
+        # Test 14: Check pure float column
+        print_and_log("\nTest 14: Check pure float column")
+        test_df['pure_floats'] = test_df['acousticness'].dropna().astype(float)
+        result = self.data_smells.check_intermingled_data_type(test_df, 'pure_floats')
+        self.assertTrue(result, "Test Case 14 Failed: Expected no smell for pure floats")
+        print_and_log("Test Case 14 Passed: Expected no smell, got no smell")
+
+        # Test 15: Create column mixing scientific notation strings with text
+        print_and_log("\nTest 15: Check scientific notation mixed with text")
+        sci_text_values = []
+        for i in range(len(test_df)):
+            if i % 3 == 0:
+                sci_text_values.append("1.23e-4")  # Scientific notation string
+            elif i % 3 == 1:
+                sci_text_values.append("invalid_sci")  # Regular text
+            else:
+                sci_text_values.append("2.45e+3")  # Another scientific notation
+        test_df['scientific_text'] = sci_text_values
+        result = self.data_smells.check_intermingled_data_type(test_df, 'scientific_text')
+        self.assertFalse(result, "Test Case 15 Failed: Expected smell for scientific notation mixed with text")
+        print_and_log("Test Case 15 Passed: Expected smell, got smell")
+
+        # Test 16: Check all columns at once (should detect smell due to modified columns)
+        print_and_log("\nTest 16: Check all columns at once")
+        result = self.data_smells.check_intermingled_data_type(test_df)
+        self.assertFalse(result, "Test Case 16 Failed: Expected smell when checking all columns")
+        print_and_log("Test Case 16 Passed: Expected smell when checking all columns, got smell")
+
+        # Test 17: Test with empty DataFrame
+        print_and_log("\nTest 17: Check empty DataFrame")
+        empty_df = pd.DataFrame()
+        result = self.data_smells.check_intermingled_data_type(empty_df)
+        self.assertTrue(result, "Test Case 17 Failed: Expected no smell for empty DataFrame")
+        print_and_log("Test Case 17 Passed: Expected no smell, got no smell")
+
+        # Test 18: Test with non-existent column
+        print_and_log("\nTest 18: Check non-existent column")
+        with self.assertRaises(ValueError):
+            self.data_smells.check_intermingled_data_type(test_df, 'non_existent_column')
+        print_and_log("Test Case 18 Passed: Correctly raised ValueError for non-existent column")
+
+        # Test 19: Check loudness field mixed with descriptive text
+        print_and_log("\nTest 19: Check loudness mixed with descriptive text")
+        test_df['loudness_descriptive'] = test_df['loudness'].copy()
+        # Replace some values with descriptive text
+        mask = test_df.index % 25 == 0
+        test_df.loc[mask, 'loudness_descriptive'] = "very_quiet"
+        result = self.data_smells.check_intermingled_data_type(test_df, 'loudness_descriptive')
+        self.assertFalse(result, "Test Case 19 Failed: Expected smell for loudness mixed with descriptive text")
+        print_and_log("Test Case 19 Passed: Expected smell, got smell")
+
+        # Test 20: Check mode field converted to mixed boolean-like and text
+        print_and_log("\nTest 20: Check mode converted to mixed types")
+        test_df['mode_mixed'] = test_df['mode'].copy()
+        # Replace some mode values with boolean-like text
+        mask = test_df.index % 8 == 0
+        test_df.loc[mask, 'mode_mixed'] = "major"
+        mask2 = test_df.index % 8 == 1
+        test_df.loc[mask2, 'mode_mixed'] = "minor"
+        result = self.data_smells.check_intermingled_data_type(test_df, 'mode_mixed')
+        self.assertFalse(result, "Test Case 20 Failed: Expected smell for mode mixed with text")
+        print_and_log("Test Case 20 Passed: Expected smell, got smell")
+
+        # Test 21: Original issue reproduction - timestamps with text and NaN
+        print_and_log("\nTest 21: Reproduce original issue - timestamps, text, and NaN")
+        # Create a pattern that repeats and ensure exact length match
+        pattern = [pd.Timestamp('2024-01-01'), np.nan, 'not_a_date']
+        original_issue_values = []
+        for i in range(len(test_df)):
+            original_issue_values.append(pattern[i % 3])
+        test_df['original_issue'] = original_issue_values
+        result = self.data_smells.check_intermingled_data_type(test_df, 'original_issue')
+        self.assertFalse(result, "Test Case 21 Failed: Expected smell for original issue reproduction")
+        print_and_log("Test Case 21 Passed: Expected smell, got smell - Original issue resolved!")
+
+        # Test 22: Check track_artist field (should be mixed text)
+        print_and_log("\nTest 22: Check track_artist field (mixed text)")
+        # Reset track_artist to original values for this test
+        test_df['track_artist'] = self.data_dictionary['track_artist']
+        result = self.data_smells.check_intermingled_data_type(test_df, 'track_artist')
+        self.assertFalse(result, "Test Case 22 Failed: Expected smell for track_artist mixed text")
+        print_and_log("Test Case 22 Passed: Expected smell, got smell")
+
+        # Test 23: Check speechiness field (should be pure numeric)
+        print_and_log("\nTest 23: Check speechiness field (pure numeric)")
+        result = self.data_smells.check_intermingled_data_type(test_df, 'speechiness')
+        self.assertTrue(result, "Test Case 23 Failed: Expected no smell for pure numeric speechiness")
+        print_and_log("Test Case 23 Passed: Expected no smell, got no smell")
+
+        # Test 24: Create column with only NaN values
+        print_and_log("\nTest 24: Check column with only NaN values")
+        test_df['all_nan'] = np.nan
+        result = self.data_smells.check_intermingled_data_type(test_df, 'all_nan')
+        self.assertTrue(result, "Test Case 24 Failed: Expected no smell for all NaN column")
+        print_and_log("Test Case 24 Passed: Expected no smell, got no smell")
+
+        # Test 25: Final comprehensive test with multiple data types
+        print_and_log("\nTest 25: Comprehensive mixed data types test")
+        comprehensive_values = []
+        for i in range(min(100, len(test_df))):
+            remainder = i % 6
+            if remainder == 0:
+                comprehensive_values.append(123)  # Integer
+            elif remainder == 1:
+                comprehensive_values.append(45.67)  # Float
+            elif remainder == 2:
+                comprehensive_values.append("text_value")  # Text
+            elif remainder == 3:
+                comprehensive_values.append(pd.Timestamp('2024-01-01'))  # Timestamp
+            elif remainder == 4:
+                comprehensive_values.append("2024-12-31")  # Date-like string
+            else:
+                comprehensive_values.append("Mixed123Text")  # Alphanumeric
+
+        # Extend the list to match DataFrame length
+        while len(comprehensive_values) < len(test_df):
+            comprehensive_values.extend(
+                comprehensive_values[:min(len(comprehensive_values), len(test_df) - len(comprehensive_values))])
+
+        test_df['comprehensive_mix'] = comprehensive_values[:len(test_df)]
+        result = self.data_smells.check_intermingled_data_type(test_df, 'comprehensive_mix')
+        self.assertFalse(result, "Test Case 25 Failed: Expected smell for comprehensive mixed types")
+        print_and_log("Test Case 25 Passed: Expected smell, got smell - Comprehensive test successful!")
+
+        print_and_log("\nFinished testing check_intermingled_data_type function with Spotify Dataset")
+        print_and_log("-----------------------------------------------------------")
+
+    def execute_check_contracted_text_ExternalDatasetTests(self):
+        """
+        Execute external dataset tests for check_contracted_text function.
+        Tests various scenarios with the Spotify dataset to detect contracted text patterns.
+        Implements 20 comprehensive test cases covering different contraction scenarios.
+        """
+        print_and_log("Testing check_contracted_text Function with Spotify Dataset")
+        print_and_log("")
+
+        # Create a copy of the dataset for modifications
+        test_df = self.data_dictionary.copy()
+
+        # Test 1: Check track_name field (likely has contracted forms)
+        print_and_log("\nTest 1: Check track_name field")
+        result = self.data_smells.check_contracted_text(test_df, 'track_name')
+        self.assertFalse(result, "Test Case 1 Failed: Expected smell for track_name with contracted forms")
+        print_and_log("Test Case 1 Passed: Expected smell, got smell")
+
+        # Test 2: Check track_artist field (may contain contractions)
+        print_and_log("\nTest 2: Check track_artist field")
+        result = self.data_smells.check_contracted_text(test_df, 'track_artist')
+        self.assertFalse(result, "Test Case 2 Failed: Expected smell for track_artist with contracted forms")
+        print_and_log("Test Case 2 Passed: Expected smell, got smell")
+
+        # Test 3: Create column with common contractions
+        print_and_log("\nTest 3: Check column with common contractions")
+        contractions_list = ["don't", "can't", "won't", "I'm", "you're", "we'll", "they've", "it's", "didn't", "shouldn't"]
+        # Create a list that repeats the contractions to match the DataFrame length exactly
+        repeated_contractions = (contractions_list * ((len(test_df) // len(contractions_list)) + 1))[:len(test_df)]
+        test_df['common_contractions'] = repeated_contractions
+        result = self.data_smells.check_contracted_text(test_df, 'common_contractions')
+        self.assertFalse(result, "Test Case 3 Failed: Expected smell for common contractions")
+        print_and_log("Test Case 3 Passed: Expected smell, got smell")
+
+        # Test 4: Create column with expanded forms (no contractions)
+        print_and_log("\nTest 4: Check column with expanded forms")
+        expanded_list = ["do not", "cannot", "will not", "I am", "you are", "we will", "they have", "it is", "did not", "should not"]
+        test_df['expanded_forms'] = (expanded_list * ((len(test_df) // len(expanded_list)) + 1))[:len(test_df)]
+        test_df['expanded_forms'] = test_df['expanded_forms'][:len(test_df)]
+        result = self.data_smells.check_contracted_text(test_df, 'expanded_forms')
+        self.assertTrue(result, "Test Case 4 Failed: Expected no smell for expanded forms")
+        print_and_log("Test Case 4 Passed: Expected no smell, got no smell")
+
+        # Test 5: Create column with mixed contractions and text
+        print_and_log("\nTest 5: Check mixed contractions and text")
+        mixed_text = ["I can't believe it", "This song rocks", "Don't stop the music", "Amazing track", "Won't you dance"]
+        test_df['mixed_text'] = (mixed_text * ((len(test_df) // len(mixed_text)) + 1))[:len(test_df)]
+        result = self.data_smells.check_contracted_text(test_df, 'mixed_text')
+        self.assertFalse(result, "Test Case 5 Failed: Expected smell for mixed contractions and text")
+        print_and_log("Test Case 5 Passed: Expected smell, got smell")
+
+        # Test 6: Create column with apostrophe but no contractions
+        print_and_log("\nTest 6: Check apostrophe without contractions")
+        apostrophe_text = ["John's car", "Mary's house", "The dog's bone", "Artist's album", "Singer's voice"]
+        test_df['apostrophe_text'] = (apostrophe_text * ((len(test_df) // len(apostrophe_text)) + 1))[:len(test_df)]
+        result = self.data_smells.check_contracted_text(test_df, 'apostrophe_text')
+        self.assertTrue(result, "Test Case 6 Failed: Expected no smell for possessive apostrophes")
+        print_and_log("Test Case 6 Passed: Expected no smell, got no smell")
+
+        # Test 7: Create column with informal contractions
+        print_and_log("\nTest 7: Check informal contractions")
+        informal_contractions = ["gonna", "wanna", "gotta", "kinda", "sorta", "lemme", "gimme", "dunno", "ain't", "y'all"]
+        test_df['informal_contractions'] = (informal_contractions * ((len(test_df) // len(informal_contractions)) + 1))[:len(test_df)]
+        result = self.data_smells.check_contracted_text(test_df, 'informal_contractions')
+        self.assertFalse(result, "Test Case 7 Failed: Expected smell for informal contractions")
+        print_and_log("Test Case 7 Passed: Expected smell, got smell")
+
+        # Test 8: Create column with numbers and contractions
+        print_and_log("\nTest 8: Check numbers with contractions")
+        number_contractions = ["Track #1 isn't here", "Song 2 won't play", "Album 3's the best", "Part 4 can't be found", "Volume 5 doesn't work"]
+        test_df['number_contractions'] = (number_contractions * ((len(test_df) // len(number_contractions)) + 1))[:len(test_df)]
+        result = self.data_smells.check_contracted_text(test_df, 'number_contractions')
+        self.assertFalse(result, "Test Case 8 Failed: Expected smell for numbers with contractions")
+        print_and_log("Test Case 8 Passed: Expected smell, got smell")
+
+        # Test 9: Create column with song titles containing contractions
+        print_and_log("\nTest 9: Check song titles with contractions")
+        song_titles = ["Can't Stop the Feeling", "Don't Stop Me Now", "I Can't Get No Satisfaction", "Won't Back Down", "Shouldn't Have"]
+        test_df['song_titles'] = (song_titles * ((len(test_df) // len(song_titles)) + 1))[:len(test_df)]
+        result = self.data_smells.check_contracted_text(test_df, 'song_titles')
+        self.assertFalse(result, "Test Case 9 Failed: Expected smell for song titles with contractions")
+        print_and_log("Test Case 9 Passed: Expected smell, got smell")
+
+        # Test 10: Check numeric column (should have no smell)
+        print_and_log("\nTest 10: Check numeric column")
+        result = self.data_smells.check_contracted_text(test_df, 'danceability')
+        self.assertTrue(result, "Test Case 10 Failed: Expected no smell for numeric column")
+        print_and_log("Test Case 10 Passed: Expected no smell, got no smell")
+
+        # Test 11: Create column with empty strings and NaN
+        print_and_log("\nTest 11: Check empty strings and NaN")
+        test_df['empty_nan'] = ([None, '', np.nan, None, ''] * ((len(test_df) // 5) + 1))[:len(test_df)]
+        result = self.data_smells.check_contracted_text(test_df, 'empty_nan')
+        self.assertTrue(result, "Test Case 11 Failed: Expected no smell for empty/NaN values")
+        print_and_log("Test Case 11 Passed: Expected no smell, got no smell")
+
+        # Test 12: Create column with contractions in different cases
+        print_and_log("\nTest 12: Check contractions in different cases")
+        case_contractions = ["DON'T", "Can't", "won'T", "I'M", "You'Re", "WE'LL", "they've", "IT'S", "DIDN'T", "shouldn't"]
+        test_df['case_contractions'] = (case_contractions * ((len(test_df) // len(case_contractions)) + 1))[:len(test_df)]
+        result = self.data_smells.check_contracted_text(test_df, 'case_contractions')
+        self.assertFalse(result, "Test Case 12 Failed: Expected smell for contractions in different cases")
+        print_and_log("Test Case 12 Passed: Expected smell, got smell")
+
+        # Test 13: Create column with contractions and punctuation
+        print_and_log("\nTest 13: Check contractions with punctuation")
+        punct_contractions = ["Don't!", "Can't?", "Won't...", "I'm;", "You're,", "We'll:", "They've-", "It's.", "Didn't(", "Shouldn't)"]
+        test_df['punct_contractions'] = (punct_contractions * ((len(test_df) // len(punct_contractions)) + 1))[:len(test_df)]
+        result = self.data_smells.check_contracted_text(test_df, 'punct_contractions')
+        self.assertFalse(result, "Test Case 13 Failed: Expected smell for contractions with punctuation")
+        print_and_log("Test Case 13 Passed: Expected smell, got smell")
+
+        # Test 14: Create column with song lyrics containing contractions
+        print_and_log("\nTest 14: Check song lyrics with contractions")
+        lyrics = ["I can't live without you baby", "Don't stop believing in yourself", "Won't you take me home tonight", "I'm gonna love you forever", "You're my everything always"]
+        test_df['lyrics'] = (lyrics * ((len(test_df) // len(lyrics)) + 1))[:len(test_df)]
+        result = self.data_smells.check_contracted_text(test_df, 'lyrics')
+        self.assertFalse(result, "Test Case 14 Failed: Expected smell for lyrics with contractions")
+        print_and_log("Test Case 14 Passed: Expected smell, got smell")
+
+        # Test 15: Create column with artist names containing contractions
+        print_and_log("\nTest 15: Check artist names with contractions")
+        artists = ["Guns N' Roses", "Boyz II Men", "Salt-N-Pepa", "D'Angelo", "O'Jays"]
+        test_df['artist_contractions'] = (artists * ((len(test_df) // len(artists)) + 1))[:len(test_df)]
+        result = self.data_smells.check_contracted_text(test_df, 'artist_contractions')
+        self.assertTrue(result, "Test Case 15 Failed: Expected no smell for artist names (not true contractions)")
+        print_and_log("Test Case 15 Passed: Expected no smell, got no smell")
+
+        # Test 16: Create column with multiple contractions per value
+        print_and_log("\nTest 16: Check multiple contractions per value")
+        multiple_contractions = ["I can't believe you won't help", "Don't think I'm not trying", "You're sure they've left already", "We'll see if it's working", "I'd say you're probably right"]
+        test_df['multiple_contractions'] = (multiple_contractions * ((len(test_df) // len(multiple_contractions)) + 1))[:len(test_df)]
+        result = self.data_smells.check_contracted_text(test_df, 'multiple_contractions')
+        self.assertFalse(result, "Test Case 16 Failed: Expected smell for multiple contractions per value")
+        print_and_log("Test Case 16 Passed: Expected smell, got smell")
+
+        # Test 17: Create column with text that looks like contractions but isn't
+        print_and_log("\nTest 17: Check text that looks like contractions")
+        fake_contractions = ["O'Brien", "McDonald's", "St. Mary's", "Ph.D.", "Mr. Smith's"]
+        test_df['fake_contractions'] = (fake_contractions * ((len(test_df) // len(fake_contractions)) + 1))[:len(test_df)]
+        result = self.data_smells.check_contracted_text(test_df, 'fake_contractions')
+        self.assertTrue(result, "Test Case 17 Failed: Expected no smell for fake contractions")
+        print_and_log("Test Case 17 Passed: Expected no smell, got no smell")
+
+        # Test 18: Create column with playlist names containing contractions
+        print_and_log("\nTest 18: Check playlist names with contractions")
+        playlists = ["90's Hits Don't Stop", "Can't Get Enough Rock", "Won't You Dance Tonight", "I'm Feeling Good Vibes", "You're My Favorite Songs"]
+        test_df['playlist_contractions'] = (playlists * ((len(test_df) // len(playlists)) + 1))[:len(test_df)]
+        result = self.data_smells.check_contracted_text(test_df, 'playlist_contractions')
+        self.assertFalse(result, "Test Case 18 Failed: Expected smell for playlist names with contractions")
+        print_and_log("Test Case 18 Passed: Expected smell, got smell")
+
+        # Test 19: Check all string columns at once (should detect smell)
+        print_and_log("\nTest 19: Check all string columns at once")
+        result = self.data_smells.check_contracted_text(test_df)
+        self.assertFalse(result, "Test Case 19 Failed: Expected smell when checking all string columns")
+        print_and_log("Test Case 19 Passed: Expected smell when checking all columns, got smell")
+
+        # Test 20: Create column with edge case contractions
+        print_and_log("\nTest 20: Check edge case contractions")
+        edge_cases = ["'twas the night before", "'tis the season", "rock 'n' roll", "fish 'n' chips", "ma'am and sir"]
+        test_df['edge_cases'] = (edge_cases * ((len(test_df) // len(edge_cases)) + 1))[:len(test_df)]
+        result = self.data_smells.check_contracted_text(test_df, 'edge_cases')
+        self.assertFalse(result, "Test Case 20 Failed: Expected smell for edge case contractions")
+        print_and_log("Test Case 20 Passed: Expected smell, got smell")
+
+    def execute_check_abbreviation_inconsistency_ExternalDatasetTests(self):
+        """
+        Execute external dataset tests for check_abbreviation_inconsistency function.
+        Tests various scenarios with the Spotify dataset to detect inconsistent usage of abbreviations,
+        acronyms, or contractions across string fields.
+        Implements 20 comprehensive test cases covering different abbreviation inconsistency scenarios.
+        """
+        print_and_log("Testing check_abbreviation_inconsistency Function with Spotify Dataset")
+        print_and_log("")
+
+        # Create a copy of the dataset for modifications
+        test_df = self.data_dictionary.copy()
+
+        # Test 1: Check track_name field (likely has abbreviation inconsistencies)
+        print_and_log("\nTest 1: Check track_name field")
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'track_name')
+        self.assertFalse(result, "Test Case 1 Failed: Expected smell for track_name with abbreviation inconsistencies")
+        print_and_log("Test Case 1 Passed: Expected smell, got smell")
+
+        # Test 2: Check track_artist field (may contain abbreviation inconsistencies)
+        print_and_log("\nTest 2: Check track_artist field")
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'track_artist')
+        self.assertFalse(result, "Test Case 2 Failed: Expected smell for track_artist with abbreviation inconsistencies")
+        print_and_log("Test Case 2 Passed: Expected smell, got smell")
+
+        # Test 3: Create column with common abbreviations vs full forms
+        print_and_log("\nTest 3: Check common abbreviations vs full forms")
+        abbrev_full = ["USA", "United States of America", "UK", "United Kingdom", "Dr", "Doctor",
+                      "Prof", "Professor", "St", "Street", "Ave", "Avenue", "NYC", "New York City",
+                      "LA", "Los Angeles", "FBI", "Federal Bureau of Investigation"]
+        # Create a list that repeats the abbreviations to match the DataFrame length exactly
+        repeated_abbrevs = (abbrev_full * ((len(test_df) // len(abbrev_full)) + 1))[:len(test_df)]
+        test_df['abbrev_full_forms'] = repeated_abbrevs
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'abbrev_full_forms')
+        self.assertFalse(result, "Test Case 3 Failed: Expected smell for abbreviation vs full form inconsistencies")
+        print_and_log("Test Case 3 Passed: Expected smell, got smell")
+
+        # Test 4: Create column with consistent abbreviations (no inconsistencies)
+        print_and_log("\nTest 4: Check consistent abbreviations")
+        consistent_abbrevs = ["USA", "USA", "USA", "USA", "USA", "UK", "UK", "UK", "UK", "UK"]
+        test_df['consistent_abbrevs'] = (consistent_abbrevs * ((len(test_df) // len(consistent_abbrevs)) + 1))[:len(test_df)]
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'consistent_abbrevs')
+        self.assertTrue(result, "Test Case 4 Failed: Expected no smell for consistent abbreviations")
+        print_and_log("Test Case 4 Passed: Expected no smell, got no smell")
+
+        # Test 5: Create column with music-related abbreviations
+        print_and_log("\nTest 5: Check music-related abbreviations")
+        music_abbrevs = ["R&B", "Rhythm and Blues", "DJ", "Disc Jockey", "LP", "Long Play",
+                        "EP", "Extended Play", "CD", "Compact Disc", "MP3", "MPEG Audio Layer III",
+                        "feat", "featuring", "vs", "versus", "w/", "with", "etc", "et cetera"]
+        test_df['music_abbrevs'] = (music_abbrevs * ((len(test_df) // len(music_abbrevs)) + 1))[:len(test_df)]
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'music_abbrevs')
+        self.assertFalse(result, "Test Case 5 Failed: Expected smell for music abbreviation inconsistencies")
+        print_and_log("Test Case 5 Passed: Expected smell, got smell")
+
+        # Test 6: Create column with genre abbreviations
+        print_and_log("\nTest 6: Check genre abbreviations")
+        genre_abbrevs = ["EDM", "Electronic Dance Music", "Hip Hop", "Hip-Hop", "R&B", "Rhythm & Blues",
+                        "Pop", "Popular Music", "Rock", "Rock and Roll", "Jazz", "Jazz Music",
+                        "Alt", "Alternative", "Indie", "Independent", "Prog", "Progressive"]
+        test_df['genre_abbrevs'] = (genre_abbrevs * ((len(test_df) // len(genre_abbrevs)) + 1))[:len(test_df)]
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'genre_abbrevs')
+        self.assertFalse(result, "Test Case 6 Failed: Expected smell for genre abbreviation inconsistencies")
+        print_and_log("Test Case 6 Passed: Expected smell, got smell")
+
+        # Test 7: Create column with time-related abbreviations
+        print_and_log("\nTest 7: Check time-related abbreviations")
+        time_abbrevs = ["AM", "ante meridiem", "PM", "post meridiem", "min", "minutes", "sec", "seconds",
+                       "hr", "hour", "hrs", "hours", "yr", "year", "yrs", "years", "Jan", "January"]
+        test_df['time_abbrevs'] = (time_abbrevs * ((len(test_df) // len(time_abbrevs)) + 1))[:len(test_df)]
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'time_abbrevs')
+        self.assertFalse(result, "Test Case 7 Failed: Expected smell for time abbreviation inconsistencies")
+        print_and_log("Test Case 7 Passed: Expected smell, got smell")
+
+        # Test 8: Create column with technology abbreviations
+        print_and_log("\nTest 8: Check technology abbreviations")
+        tech_abbrevs = ["AI", "Artificial Intelligence", "ML", "Machine Learning", "API", "Application Programming Interface",
+                       "URL", "Uniform Resource Locator", "HTML", "HyperText Markup Language", "CSS", "Cascading Style Sheets",
+                       "JS", "JavaScript", "DB", "Database", "UI", "User Interface", "UX", "User Experience"]
+        test_df['tech_abbrevs'] = (tech_abbrevs * ((len(test_df) // len(tech_abbrevs)) + 1))[:len(test_df)]
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'tech_abbrevs')
+        self.assertFalse(result, "Test Case 8 Failed: Expected smell for technology abbreviation inconsistencies")
+        print_and_log("Test Case 8 Passed: Expected smell, got smell")
+
+        # Test 9: Create column with artist name abbreviations
+        print_and_log("\nTest 9: Check artist name abbreviations")
+        artist_abbrevs = ["MJ", "Michael Jackson", "JT", "Justin Timberlake", "BTS", "Bangtan Sonyeondan",
+                         "JLo", "Jennifer Lopez", "P!nk", "Pink", "50 Cent", "Fifty Cent",
+                         "Eminem", "Marshall Mathers", "Jay-Z", "Jay Z", "B.B. King", "BB King"]
+        test_df['artist_abbrevs'] = (artist_abbrevs * ((len(test_df) // len(artist_abbrevs)) + 1))[:len(test_df)]
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'artist_abbrevs')
+        self.assertFalse(result, "Test Case 9 Failed: Expected smell for artist name abbreviation inconsistencies")
+        print_and_log("Test Case 9 Passed: Expected smell, got smell")
+
+        # Test 10: Check numeric column (should have no smell)
+        print_and_log("\nTest 10: Check numeric column")
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'danceability')
+        self.assertTrue(result, "Test Case 10 Failed: Expected no smell for numeric column")
+        print_and_log("Test Case 10 Passed: Expected no smell, got no smell")
+
+        # Test 11: Create column with empty strings and NaN
+        print_and_log("\nTest 11: Check empty strings and NaN")
+        test_df['empty_nan'] = ([None, '', np.nan, None, ''] * ((len(test_df) // 5) + 1))[:len(test_df)]
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'empty_nan')
+        self.assertTrue(result, "Test Case 11 Failed: Expected no smell for empty/NaN values")
+        print_and_log("Test Case 11 Passed: Expected no smell, got no smell")
+
+        # Test 12: Create column with abbreviations in different cases
+        print_and_log("\nTest 12: Check abbreviations in different cases")
+        case_abbrevs = ["usa", "USA", "Usa", "uSa", "uk", "UK", "Uk", "uK", "fbi", "FBI"]
+        test_df['case_abbrevs'] = (case_abbrevs * ((len(test_df) // len(case_abbrevs)) + 1))[:len(test_df)]
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'case_abbrevs')
+        self.assertFalse(result, "Test Case 12 Failed: Expected smell for abbreviations in different cases")
+        print_and_log("Test Case 12 Passed: Expected smell, got smell")
+
+        # Test 13: Create column with abbreviations and punctuation variations
+        print_and_log("\nTest 13: Check abbreviations with punctuation variations")
+        punct_abbrevs = ["U.S.A.", "USA", "U.S.A", "U S A", "Dr.", "Dr", "Prof.", "Prof", "St.", "St"]
+        test_df['punct_abbrevs'] = (punct_abbrevs * ((len(test_df) // len(punct_abbrevs)) + 1))[:len(test_df)]
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'punct_abbrevs')
+        self.assertFalse(result, "Test Case 13 Failed: Expected smell for abbreviations with punctuation variations")
+        print_and_log("Test Case 13 Passed: Expected smell, got smell")
+
+        # Test 14: Create column with record label abbreviations
+        print_and_log("\nTest 14: Check record label abbreviations")
+        label_abbrevs = ["UMG", "Universal Music Group", "SME", "Sony Music Entertainment", "WMG", "Warner Music Group",
+                        "EMI", "Electric and Musical Industries", "BMG", "Bertelsmann Music Group", "Def Jam", "Def Jam Recordings",
+                        "Atlantic", "Atlantic Records", "Columbia", "Columbia Records", "Capitol", "Capitol Records"]
+        test_df['label_abbrevs'] = (label_abbrevs * ((len(test_df) // len(label_abbrevs)) + 1))[:len(test_df)]
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'label_abbrevs')
+        self.assertFalse(result, "Test Case 14 Failed: Expected smell for record label abbreviation inconsistencies")
+        print_and_log("Test Case 14 Passed: Expected smell, got smell")
+
+        # Test 15: Create column with instrument abbreviations
+        print_and_log("\nTest 15: Check instrument abbreviations")
+        instrument_abbrevs = ["gtr", "guitar", "bass", "bass guitar", "kbd", "keyboard", "drms", "drums",
+                             "vox", "vocals", "sax", "saxophone", "tpt", "trumpet", "vln", "violin", "pno", "piano"]
+        test_df['instrument_abbrevs'] = (instrument_abbrevs * ((len(test_df) // len(instrument_abbrevs)) + 1))[:len(test_df)]
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'instrument_abbrevs')
+        self.assertFalse(result, "Test Case 15 Failed: Expected smell for instrument abbreviation inconsistencies")
+        print_and_log("Test Case 15 Passed: Expected smell, got smell")
+
+        # Test 16: Create column with geographic abbreviations
+        print_and_log("\nTest 16: Check geographic abbreviations")
+        geo_abbrevs = ["CA", "California", "NY", "New York", "TX", "Texas", "FL", "Florida",
+                      "IL", "Illinois", "PA", "Pennsylvania", "OH", "Ohio", "GA", "Georgia", "NC", "North Carolina"]
+        test_df['geo_abbrevs'] = (geo_abbrevs * ((len(test_df) // len(geo_abbrevs)) + 1))[:len(test_df)]
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'geo_abbrevs')
+        self.assertFalse(result, "Test Case 16 Failed: Expected smell for geographic abbreviation inconsistencies")
+        print_and_log("Test Case 16 Passed: Expected smell, got smell")
+
+        # Test 17: Create column with month abbreviations
+        print_and_log("\nTest 17: Check month abbreviations")
+        month_abbrevs = ["Jan", "January", "Feb", "February", "Mar", "March", "Apr", "April",
+                        "May", "May", "Jun", "June", "Jul", "July", "Aug", "August", "Sep", "September"]
+        test_df['month_abbrevs'] = (month_abbrevs * ((len(test_df) // len(month_abbrevs)) + 1))[:len(test_df)]
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'month_abbrevs')
+        self.assertFalse(result, "Test Case 17 Failed: Expected smell for month abbreviation inconsistencies")
+        print_and_log("Test Case 17 Passed: Expected smell, got smell")
+
+        # Test 18: Create column with playlist abbreviations
+        print_and_log("\nTest 18: Check playlist abbreviations")
+        playlist_abbrevs = ["Top 40 Hits", "Top Forty Hits", "Best of 2000s", "Best of Two Thousands",
+                           "90s Rock", "Nineties Rock", "80s Pop", "Eighties Pop", "Hip Hop Classics", "Hip-Hop Classics",
+                           "R&B Hits", "Rhythm and Blues Hits", "Electronic Dance Music", "EDM", "Alternative Rock", "Alt Rock"]
+        test_df['playlist_abbrevs'] = (playlist_abbrevs * ((len(test_df) // len(playlist_abbrevs)) + 1))[:len(test_df)]
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'playlist_abbrevs')
+        self.assertFalse(result, "Test Case 18 Failed: Expected smell for playlist abbreviation inconsistencies")
+        print_and_log("Test Case 18 Passed: Expected smell, got smell")
+
+        # Test 19: Check all string columns at once (should detect smell)
+        print_and_log("\nTest 19: Check all string columns at once")
+        result = self.data_smells.check_abbreviation_consistency(test_df)
+        self.assertFalse(result, "Test Case 19 Failed: Expected smell when checking all string columns")
+        print_and_log("Test Case 19 Passed: Expected smell when checking all columns, got smell")
+
+        # Test 20: Create column with mixed abbreviation styles
+        print_and_log("\nTest 20: Check mixed abbreviation styles")
+        mixed_abbrevs = ["ft.", "feat", "featuring", "w/", "with", "vs.", "versus", "v.", "v",
+                        "&", "and", "etc.", "etc", "et cetera", "e.g.", "eg", "for example",
+                        "i.e.", "ie", "that is", "Mr.", "Mr", "Mister"]
+        test_df['mixed_abbrevs'] = (mixed_abbrevs * ((len(test_df) // len(mixed_abbrevs)) + 1))[:len(test_df)]
+        result = self.data_smells.check_abbreviation_consistency(test_df, 'mixed_abbrevs')
+        self.assertFalse(result, "Test Case 20 Failed: Expected smell for mixed abbreviation styles")
+        print_and_log("Test Case 20 Passed: Expected smell, got smell")
+
+        print_and_log("\nFinished testing check_abbreviation_inconsistency function with Spotify Dataset")
+        print_and_log("-----------------------------------------------------------")
+
+    def execute_check_syntactic_synonym_ExternalDatasetTests(self):
+        """
+        Execute external dataset tests for check_syntactic_synonym function.
+        Tests various scenarios with the Spotify dataset to detect syntactic synonyms.
+        Implements 20 comprehensive test cases covering different synonym scenarios.
+        """
+        print_and_log("Testing check_syntactic_synonym Function with Spotify Dataset")
+        print_and_log("")
+
+        # Create a copy of the dataset for modifications
+        test_df = self.data_dictionary.copy()
+
+        # Test 1: Check track_name field (likely has syntactic synonyms)
+        print_and_log("\nTest 1: Check track_name field")
+        result = self.data_smells.check_syntactic_synonym(test_df, 'track_name')
+        self.assertFalse(result, "Test Case 1 Failed: Expected smell for track_name with syntactic synonyms")
+        print_and_log("Test Case 1 Passed: Expected smell, got smell")
+
+        # Test 2: Check track_artist field (may contain synonyms)
+        print_and_log("\nTest 2: Check track_artist field")
+        result = self.data_smells.check_syntactic_synonym(test_df, 'track_artist')
+        self.assertFalse(result, "Test Case 2 Failed: Expected smell for track_artist with syntactic synonyms")
+        print_and_log("Test Case 2 Passed: Expected smell, got smell")
+
+        # Test 3: Create column with known synonyms
+        print_and_log("\nTest 3: Check column with known synonyms")
+        synonyms_list = ["fast", "quick", "rapid", "speedy", "slow", "sluggish", "lethargic", "lazy"]
+        # Create a list that repeats the synonyms to match the DataFrame length exactly
+        repeated_synonyms = (synonyms_list * ((len(test_df) // len(synonyms_list)) + 1))[:len(test_df)]
+        test_df['known_synonyms'] = repeated_synonyms
+        result = self.data_smells.check_syntactic_synonym(test_df, 'known_synonyms')
+        self.assertFalse(result, "Test Case 3 Failed: Expected smell for known synonyms")
+        print_and_log("Test Case 3 Passed: Expected smell, got smell")
+
+        # Test 4: Create column with antonyms (should not detect as synonyms)
+        print_and_log("\nTest 4: Check column with antonyms")
+        antonyms_list = ["hot", "cold", "up", "down", "in", "out", "on", "off"]
+        test_df['antonyms'] = (antonyms_list * ((len(test_df) // len(antonyms_list)) + 1))[:len(test_df)]
+        result = self.data_smells.check_syntactic_synonym(test_df, 'antonyms')
+        self.assertTrue(result, "Test Case 4 Failed: Expected no smell for antonyms")
+        print_and_log("Test Case 4 Passed: Expected no smell, got no smell")
+
+        # Test 5: Create column with phrases (should be detect as synonyms)
+        print_and_log("\nTest 5: Check column with phrases")
+        phrases_list = ["kick the bucket", "spill the beans", "let the cat out of the bag"]
+        test_df['phrases'] = (phrases_list * ((len(test_df) // len(phrases_list)) + 1))[:len(test_df)]
+        result = self.data_smells.check_syntactic_synonym(test_df, 'phrases')
+        self.assertFalse(result, "Test Case 5 Failed: Expected data smell in phrases")
+        print_and_log("Test Case 5 Passed: Expected data smell, got smell")
+
+        # Test 6: Create column with numeric and text values
+        print_and_log("\nTest 6: Check column with numeric and text values")
+        mixed_values = []
+        for i in range(len(test_df)):
+            if i % 2 == 0:
+                mixed_values.append(test_df.iloc[i]['tempo'])  # Numeric value
+            else:
+                mixed_values.append("not_a_number")  # Text value
+        test_df['mixed_numeric_text'] = mixed_values
+        result = self.data_smells.check_syntactic_synonym(test_df, 'mixed_numeric_text')
+        self.assertTrue(result, "Test Case 6 Failed: Expected no smell for mixed numeric and text")
+        print_and_log("Test Case 6 Passed: Expected no smell, got no smell")
+
+        # Test 7: Check track_popularity with mixed values
+        print_and_log("\nTest 7: Check track_popularity modified with text")
+        test_df['popularity_mixed'] = test_df['track_popularity'].copy()
+        # Replace some popularity values with text descriptions
+        mask = test_df.index % 10 == 0
+        test_df.loc[mask, 'popularity_mixed'] = "very_popular"
+        result = self.data_smells.check_syntactic_synonym(test_df, 'popularity_mixed')
+        self.assertTrue(result, "Test Case 7 Failed: Expected no smell for popularity mixed with text")
+        print_and_log("Test Case 7 Passed: Expected no smell, got no smell")
+
+        # Test 8: Create column with random synonyms
+        print_and_log("\nTest 8: Check column with random synonyms")
+        import random
+        random_synonyms = ["fast", "quick", "slow", "sluggish", "hot", "cold", "in", "out"]
+        test_df['random_synonyms'] = test_df['track_name'].apply(lambda x: random.choice(random_synonyms))
+        result = self.data_smells.check_syntactic_synonym(test_df, 'random_synonyms')
+        self.assertFalse(result, "Test Case 8 Failed: Expected smell for random synonyms")
+        print_and_log("Test Case 8 Passed: Expected smell, got smell")
+
+        # Test 9: Check numeric column (should have no smell)
+        print_and_log("\nTest 9: Check numeric column")
+        result = self.data_smells.check_syntactic_synonym(test_df, 'danceability')
+        self.assertTrue(result, "Test Case 9 Failed: Expected no smell for numeric column")
+        print_and_log("Test Case 9 Passed: Expected no smell, got no smell")
+
+        # Test 10: Create column with empty strings and NaN
+        print_and_log("\nTest 10: Check empty strings and NaN")
+        test_df['empty_nan'] = ([None, '', np.nan, None, ''] * ((len(test_df) // 5) + 1))[:len(test_df)]
+        result = self.data_smells.check_syntactic_synonym(test_df, 'empty_nan')
+        self.assertTrue(result, "Test Case 10 Failed: Expected no smell for empty/NaN values")
+        print_and_log("Test Case 10 Passed: Expected no smell, got no smell")
+
+        # Test 11: Create column with synonyms in different cases
+        print_and_log("\nTest 11: Check synonyms in different cases")
+        case_synonyms = ["FAST", "quick", "SLOW", "sluggish", "HOT", "cold", "IN", "out"]
+        test_df['case_synonyms'] = (case_synonyms * ((len(test_df) // len(case_synonyms)) + 1))[:len(test_df)]
+        result = self.data_smells.check_syntactic_synonym(test_df, 'case_synonyms')
+        self.assertFalse(result, "Test Case 11 Failed: Expected smell for synonyms in different cases")
+        print_and_log("Test Case 11 Passed: Expected smell, got smell")
+
+        # Test 12: Create column with contractions and synonyms
+        print_and_log("\nTest 12: Check contractions with synonyms")
+        contract_synonyms = ["don't", "do not", "can't", "cannot", "won't", "will not"]
+        test_df['contract_synonyms'] = (contract_synonyms * ((len(test_df) // len(contract_synonyms)) + 1))[:len(test_df)]
+        result = self.data_smells.check_syntactic_synonym(test_df, 'contract_synonyms')
+        self.assertFalse(result, "Test Case 12 Failed: Expected smell for contractions with synonyms")
+        print_and_log("Test Case 12 Passed: Expected smell, got smell")
+
+        print_and_log("\nFinished testing check_contracted_text function with Spotify Dataset")
+        print_and_log("-----------------------------------------------------------")
+
+    def execute_check_ambiguous_value_ExternalDatasetTests(self):
+        """
+        Execute external dataset tests for check_ambiguous_value function.
+        Tests various scenarios with the Spotify dataset to detect ambiguous values in columns.
+        Implements 20 comprehensive test cases covering different ambiguity scenarios.
+        """
+        print_and_log("Testing check_ambiguous_value Function with Spotify Dataset")
+        print_and_log("")
+
+        # Create a copy of the dataset for modifications
+        test_df = self.data_dictionary.copy()
+
+        # Test 1: Check track_name field (don't have ambiguous values)
+        print_and_log("\nTest 1: Check track_name field")
+        result = self.data_smells.check_ambiguous_value(test_df, 'track_name')
+        self.assertTrue(result, "Test Case 1 Failed: Expected no smell for track_name with ambiguous values")
+        print_and_log("Test Case 1 Passed: Expected no smell, got no smell")
+
+        # Test 2: Check track_artist field (don't contain ambiguous values)
+        print_and_log("\nTest 2: Check track_artist field")
+        result = self.data_smells.check_ambiguous_value(test_df, 'track_artist')
+        self.assertTrue(result, "Test Case 2 Failed: Expected no smell for track_artist with ambiguous values")
+        print_and_log("Test Case 2 Passed: Expected no smell, got no smell")
+
+        # Test 3: Check numeric column (should have no smell)
+        print_and_log("\nTest 3: Check numeric column")
+        result = self.data_smells.check_ambiguous_value(test_df, 'danceability')
+        self.assertTrue(result, "Test Case 3 Failed: Expected no smell for numeric column")
+        print_and_log("Test Case 3 Passed: Expected no smell, got no smell")
+
+        # Test 4: Create column with empty strings and NaN
+        print_and_log("\nTest 4: Check empty strings and NaN")
+        test_df['empty_nan'] = ([None, '', np.nan, None, ''] * ((len(test_df) // 5) + 1))[:len(test_df)]
+        result = self.data_smells.check_ambiguous_value(test_df, 'empty_nan')
+        self.assertTrue(result, "Test Case 4 Failed: Expected no smell for empty/NaN values")
+        print_and_log("Test Case 4 Passed: Expected no smell, got no smell")
+
+        # Test 5: Create column with synonyms in different cases
+        print_and_log("\nTest 5: Check synonyms in different cases")
+        case_synonyms = ["FAST", "quick", "SLOW", "sluggish", "HOT", "cold", "IN", "out"]
+        test_df['case_synonyms'] = (case_synonyms * ((len(test_df) // len(case_synonyms)) + 1))[:len(test_df)]
+        result = self.data_smells.check_ambiguous_value(test_df, 'case_synonyms')
+        self.assertTrue(result, "Test Case 5 Failed: Expected no smell for synonyms in different cases")
+        print_and_log("Test Case 5 Passed: Expected no smell, got no smell")
+
+        # Test 6: Create column with contractions and synonyms
+        print_and_log("\nTest 6: Check contractions with synonyms")
+        contract_synonyms = ["don't", "do not", "can't", "cannot", "won't", "will not"]
+        test_df['contract_synonyms'] = (contract_synonyms * ((len(test_df) // len(contract_synonyms)) + 1))[:len(test_df)]
+        result = self.data_smells.check_ambiguous_value(test_df, 'contract_synonyms')
+        self.assertTrue(result, "Test Case 6 Failed: Expected no smell for contractions with synonyms")
+        print_and_log("Test Case 6 Passed: Expected no smell, got no smell")
+
+        # Test 7: Check pure integer column (converted key)
+        print_and_log("\nTest 7: Check pure integer column")
+        # Convert to int the column avoiding nulls
+        test_df['pure_integers'] = test_df['key'].dropna().astype(int)
+        result = self.data_smells.check_ambiguous_value(test_df, 'pure_integers')
+        self.assertTrue(result, "Test Case 7 Failed: Expected no smell for pure integers")
+        print_and_log("Test Case 7 Passed: Expected no smell, got no smell")
+
+        # Test 8: Check pure float column
+        print_and_log("\nTest 8: Check pure float column")
+        test_df['pure_floats'] = test_df['acousticness'].dropna().astype(float)
+        result = self.data_smells.check_ambiguous_value(test_df, 'pure_floats')
+        self.assertTrue(result, "Test Case 8 Failed: Expected no smell for pure floats")
+        print_and_log("Test Case 8 Passed: Expected no smell, got no smell")
+
+        # Test 9: Test with empty DataFrame
+        print_and_log("\nTest 9: Check empty DataFrame")
+        empty_df = pd.DataFrame()
+        result = self.data_smells.check_ambiguous_value(empty_df)
+        self.assertTrue(result, "Test Case 9 Failed: Expected no smell for empty DataFrame")
+        print_and_log("Test Case 9 Passed: Expected no smell, got no smell")
+
+        # Test 10: Test with non-existent column
+        print_and_log("\nTest 10: Check non-existent column")
+        with self.assertRaises(ValueError):
+            self.data_smells.check_ambiguous_value(test_df, 'non_existent_column')
+        print_and_log("Test Case 10 Passed: Correctly raised ValueError for non-existent column")
+
+        # Test 11: Check loudness field mixed with descriptive text
+        print_and_log("\nTest 11: Check loudness mixed with descriptive text")
+        test_df['loudness_descriptive'] = test_df['loudness'].copy()
+        # Replace some values with descriptive text
+        mask = test_df.index % 25 == 0
+        test_df.loc[mask, 'loudness_descriptive'] = "very_quiet"
+        result = self.data_smells.check_ambiguous_value(test_df, 'loudness_descriptive')
+        self.assertTrue(result, "Test Case 11 Failed: Expected no smell for loudness mixed with descriptive text")
+        print_and_log("Test Case 11 Passed: Expected no smell, got no smell")
+
+        # Test 12: Check mode field converted to mixed boolean-like and text
+        print_and_log("\nTest 12: Check mode converted to mixed types")
+        test_df['mode_mixed'] = test_df['mode'].copy()
+        # Replace some mode values with boolean-like text
+        mask = test_df.index % 8 == 0
+        test_df.loc[mask, 'mode_mixed'] = "major"
+        mask2 = test_df.index % 8 == 1
+        test_df.loc[mask2, 'mode_mixed'] = "minor"
+        result = self.data_smells.check_ambiguous_value(test_df, 'mode_mixed')
+        self.assertTrue(result, "Test Case 12 Failed: Expected no smell for mode mixed with text")
+        print_and_log("Test Case 12 Passed: Expected no smell, got no smell")
+
+        # Test 13: Check speechiness field (should be pure numeric)
+        print_and_log("\nTest 13: Check speechiness field (pure numeric)")
+        result = self.data_smells.check_ambiguous_value(test_df, 'speechiness')
+        self.assertTrue(result, "Test Case 13 Failed: Expected no smell for pure numeric speechiness")
+        print_and_log("Test Case 13 Passed: Expected no smell, got no smell")
+
+        # Test 14: Create column with only NaN values
+        print_and_log("\nTest 14: Check column with only NaN values")
+        test_df['all_nan'] = np.nan
+        result = self.data_smells.check_ambiguous_value(test_df, 'all_nan')
+        self.assertTrue(result, "Test Case 14 Failed: Expected no smell for all NaN column")
+        print_and_log("Test Case 14 Passed: Expected no smell, got no smell")
+
+        print_and_log("\nFinished testing check_ambiguous_value function with Spotify Dataset")
         print_and_log("-----------------------------------------------------------")

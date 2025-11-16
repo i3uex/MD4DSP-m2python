@@ -1,13 +1,19 @@
+import re
+import nltk
 import logging
 import unicodedata
-import re
+from collections import defaultdict
 
+import random
 import numpy as np
+import contractions
 import pandas as pd
-
-from helpers.auxiliar import is_time_string, is_date_string, is_datetime_string, is_float_string, is_integer_string
+from nltk.corpus import wordnet
+from nltk.stem import WordNetLemmatizer
 from helpers.logger import print_and_log
 from helpers.enumerations import DataType
+from helpers.auxiliar import is_time_string, is_date_string, is_datetime_string, is_float_string, is_integer_string, \
+    normalize_text
 
 
 def check_precision_consistency(data_dictionary: pd.DataFrame, expected_decimals: int, field: str = None,
@@ -61,7 +67,7 @@ def check_precision_consistency(data_dictionary: pd.DataFrame, expected_decimals
             if num_unique_decimals > 1:
                 # Case 2: Inconsistent decimal places
                 print_and_log(
-                    f"Warning in function: {origin_function} - Possible data smell: DataField {field} has "
+                    f"Warning in function: {origin_function} - DATA SMELL DETECTED: Precision Inconsistency: DataField {field} has "
                     f"inconsistent number of decimal places. Found {num_unique_decimals}"
                     f"different decimal lengths.", level=logging.WARN)
                 print(f"DATA SMELL DETECTED: Precision Inconsistency in DataField {field}")
@@ -69,7 +75,7 @@ def check_precision_consistency(data_dictionary: pd.DataFrame, expected_decimals
             elif num_unique_decimals == 1 and unique_decimals[0] != expected_decimals:
                 # Case 3: Wrong number of decimals
                 print_and_log(
-                    f"Warning in function: {origin_function} - Possible data smell: DataField {field} has "
+                    f"Warning in function: {origin_function} - DATA SMELL DETECTED: Precision Inconsistency: DataField {field} has "
                     f"{unique_decimals[0]} decimal places but {expected_decimals} were"
                     f"expected.", level=logging.WARN)
                 print(f"DATA SMELL DETECTED: Precision Inconsistency in DataField {field}")
@@ -118,7 +124,7 @@ def check_missing_invalid_value_consistency(data_dictionary: pd.DataFrame, missi
         undefined_values = unique_values.intersection(common_set) - missing_invalid_set
 
         if undefined_values:
-            message = (f"Warning in function: {origin_function} - Possible data smell: The missing or invalid "
+            message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Missing or Invalid Value Inconsistency: The missing or invalid "
                        f"values {list(undefined_values)} in the dataField {field_name} "
                        f"do not align with the definitions in the data model: {list(missing_invalid_set)}")
             print_and_log(message, level=logging.WARN)
@@ -137,7 +143,7 @@ def check_integer_as_floating_point(data_dictionary: pd.DataFrame, field: str = 
                                     origin_function: str = None) -> bool:
     """
     Checks if any float column in the DataFrame contains only integer values (decimals always .00).
-    If so, logs a warning indicating a possible data smell.
+    If so, logs a warning indicating a data smell.
 
     :param data_dictionary: (pd.DataFrame) DataFrame containing the data
     :param field: (str) Optional field to check; if None, checks all float columns
@@ -153,7 +159,7 @@ def check_integer_as_floating_point(data_dictionary: pd.DataFrame, field: str = 
             if not column.empty:
                 # Check if all values in the column are integers
                 if np.all((column.values == np.floor(column.values))):
-                    message = (f"Warning in function: {origin_function} - Possible data smell: DataField '{col_name}' "
+                    message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Integer as Floating Point: DataField '{col_name}' "
                                f"may be an integer disguised as a float.")
                     print_and_log(message, level=logging.WARN)
                     print(f"DATA SMELL DETECTED: Integer as Floating Point in DataField {col_name}")
@@ -205,31 +211,31 @@ def check_types_as_string(data_dictionary: pd.DataFrame, field: str,
 
         # Detect if the original column is numeric (int or float)
         if pd.api.types.is_integer_dtype(col_dtype) or values.apply(is_integer_string).all():
-            print_and_log(f"Warning in function: {origin_function} - Possible data smell: all values in "
+            print_and_log(f"Warning in function: {origin_function} - DATA SMELL DETECTED: Integer as String: all values in "
                           f"DataField {field} are of type Integer, but the DataField is defined as "
                           f"String in the data model", level=logging.WARN)
             print(f"DATA SMELL DETECTED: Integer as String in DataField {field}")
             return False
         elif pd.api.types.is_float_dtype(col_dtype) or values.apply(is_float_string).all():
-            print_and_log(f"Warning in function: {origin_function} - Possible data smell: all values in "
+            print_and_log(f"Warning in function: {origin_function} - DATA SMELL DETECTED: Float as String: all values in "
                           f"DataField {field} are of type Float, but the DataField is defined as "
                           f"String in the data model", level=logging.WARN)
             print(f"DATA SMELL DETECTED: Float as String in DataField {field}")
             return False
         elif values.apply(is_time_string).all():
-            print_and_log(f"Warning in function: {origin_function} - Possible data smell: all values in "
+            print_and_log(f"Warning in function: {origin_function} - DATA SMELL DETECTED: Time as String: all values in "
                           f"DataField {field} are of type Time, but the DataField is defined as "
                           f"String in the data model", level=logging.WARN)
             print(f"DATA SMELL DETECTED: Time as String in DataField {field}")
             return False
         elif values.apply(is_date_string).all():
-            print_and_log(f"Warning in function: {origin_function} - Possible data smell: all values in "
+            print_and_log(f"Warning in function: {origin_function} - DATA SMELL DETECTED: Date as String: all values in "
                           f"DataField {field} are of type Date, but the DataField is defined as "
                           f"String in the data model", level=logging.WARN)
             print(f"DATA SMELL DETECTED: Date as String in DataField {field}")
             return False
         elif values.apply(is_datetime_string).all():
-            print_and_log(f"Warning in function: {origin_function} - Possible data smell: all values in "
+            print_and_log(f"Warning in function: {origin_function} - DATA SMELL DETECTED: DateTime as String: all values in "
                           f"DataField {field} are of type DateTime, but the DataField is defined as "
                           f"String in the data model", level=logging.WARN)
             print(f"DATA SMELL DETECTED: DateTime as String in DataField {field}")
@@ -264,7 +270,7 @@ def check_types_as_string(data_dictionary: pd.DataFrame, field: str,
         if checker is None:
             raise ValueError(f"Unknown expected_type '{expected_type}' for DataField '{field}'")
         if not checker(values):
-            print_and_log(f"Warning in function: {origin_function} - Possible data smell: Expected data "
+            print_and_log(f"Warning in function: {origin_function} - DATA SMELL DETECTED: Type Mismatch: Expected data "
                           f"for DataField {field} is {expected_type.name}, "
                           f"but got {col_dtype.name}", level=logging.WARN)
             print(f"Warning: Type mismatch in DataField {field} (expected {expected_type.name}, got {col_dtype.name})")
@@ -275,7 +281,7 @@ def check_types_as_string(data_dictionary: pd.DataFrame, field: str,
 def check_special_character_spacing(data_dictionary: pd.DataFrame, field: str = None,
                                     origin_function: str = None) -> bool:
     """
-    Checks if string columns contain accents, uppercase letters, extra spaces, or special characters
+    Checks if string columns contain accents, extra spaces, or special characters
     that do not align with the recommended data format for string operations.
 
     :param data_dictionary: (pd.DataFrame) DataFrame containing the data
@@ -286,14 +292,14 @@ def check_special_character_spacing(data_dictionary: pd.DataFrame, field: str = 
     """
 
     def clean_text(text):
-        """Helper function to clean text by removing accents, special characters, extra spaces and converting to lowercase"""
+        """Helper function to clean text by removing accents, special characters, and extra spaces (preserving case)"""
         if pd.isna(text) or text == '':
             return text
         # Convert to string in case it's not
         text = str(text)
-        # Remove accents, special characters, normalize spaces and convert to lowercase
+        # Remove accents and special characters, normalize spaces but preserve case
         return re.sub(r'\s+', ' ', re.sub(r'[^A-Za-z0-9\s]', '', ''.join(
-            [c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn'])).lower()).strip()
+            [c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn']))).strip()
 
     def check_column(col_name):
         # Only check string columns
@@ -304,10 +310,21 @@ def check_special_character_spacing(data_dictionary: pd.DataFrame, field: str = 
                 cleaned_values = column.apply(clean_text)
 
                 # Check if any value changed after cleaning (indicating the presence of special chars, spaces, etc.)
-                if not (column == cleaned_values).all():
-                    message = (f"Warning in function: {origin_function} - Possible data smell: the values "
-                               f"in {col_name} contain accents, uppercase letters, extra spaces, or special "
-                               f"characters that do not align with the recommended data format for string operations.")
+                changed_mask = (column != cleaned_values)
+                if changed_mask.any():
+                    # Get the values that changed (have problems)
+                    problematic_values = column[changed_mask].unique()
+                    # Limit the number of examples shown to avoid overly long messages
+                    examples_to_show = list(problematic_values[:5])
+
+                    message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Special Character/Spacing: the values "
+                               f"in {col_name} contain accents, extra spaces, or special "
+                               f"characters that do not align with the recommended data format for string operations. "
+                               f"Examples of problematic values: {examples_to_show}")
+
+                    if len(problematic_values) > 5:
+                        message += f" (and {len(problematic_values) - 5} more values)"
+
                     print_and_log(message, level=logging.WARN)
                     print(f"DATA SMELL DETECTED: Special Character/Spacing in DataField {col_name}")
                     return False
@@ -355,7 +372,7 @@ def check_suspect_precision(data_dictionary: pd.DataFrame, field: str = None, or
                     continue
                 try:
                     if v != float(format(v, 'g')):
-                        print_and_log(f"Warning in function: {origin_function} - Possible data smell: "
+                        print_and_log(f"Warning in function: {origin_function} - DATA SMELL DETECTED: Suspect Precision: "
                                       f"The dataField {col_name} contains "
                                       f"non-significant digits: {v} -> {float(format(v, 'g'))}", level=logging.WARN)
                         print(f"DATA SMELL DETECTED: Suspect Precision in DataField {col_name}")
@@ -383,7 +400,7 @@ def check_suspect_distribution(data_dictionary: pd.DataFrame, min_value: float, 
                                field: str = None, origin_function: str = None) -> bool:
     """
     Checks if continuous data fields have values outside the range defined in the data model.
-    If so, logs a warning indicating a possible data smell.
+    If so, logs a warning indicating a data smell.
 
     :param data_dictionary: (pd.DataFrame) DataFrame containing the data
     :param min_value: (float) Minimum value allowed according to the data model
@@ -409,8 +426,32 @@ def check_suspect_distribution(data_dictionary: pd.DataFrame, min_value: float, 
                 # Check if any values are outside the defined range
                 out_of_range = (column < min_value) | (column > max_value)
                 if out_of_range.any():
-                    message = (f"Warning in function: {origin_function} - Possible data smell: The range of values of "
-                               f"dataField {col_name} do not align with the definitions in the data-model")
+                    # Get detailed information about the out-of-range values
+                    out_of_range_values = column[out_of_range]
+                    actual_min = column.min()
+                    actual_max = column.max()
+                    count_out_of_range = out_of_range.sum()
+                    total_values = len(column)
+                    percentage_out_of_range = (count_out_of_range / total_values) * 100
+
+                    # Get examples of out-of-range values (up to 5 examples)
+                    examples = out_of_range_values.head(5).tolist()
+
+                    # Determine if values are below min, above max, or both
+                    below_min = (column < min_value).sum()
+                    above_max = (column > max_value).sum()
+
+                    range_details = []
+                    if below_min > 0:
+                        range_details.append(f"{below_min} values below minimum ({min_value})")
+                    if above_max > 0:
+                        range_details.append(f"{above_max} values above maximum ({max_value})")
+
+                    message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Suspect Distribution: The range of values of "
+                               f"dataField {col_name} do not align with the definitions in the data-model. "
+                               f"Expected range: [{min_value}, {max_value}], but found actual range: [{actual_min}, {actual_max}]. "
+                               f"Out-of-range violations: {count_out_of_range}/{total_values} values ({percentage_out_of_range:.1f}%) - "
+                               f"{', '.join(range_details)}. Examples of violating values: {examples}")
                     print_and_log(message, level=logging.WARN)
                     print(f"DATA SMELL DETECTED: Suspect Distribution in DataField {col_name}")
                     return False
@@ -437,7 +478,7 @@ def check_suspect_distribution(data_dictionary: pd.DataFrame, min_value: float, 
 def check_date_as_datetime(data_dictionary: pd.DataFrame, field: str = None, origin_function: str = None) -> bool:
     """
     Check if any datetime column appears to contain only date values (time part is always 00:00:00).
-    If so, logs a warning indicating a possible data smell.
+    If so, logs a warning indicating a data smell.
     Takes into account timezone differences by converting all times to UTC before checking.
 
     :param data_dictionary: (pd.DataFrame) DataFrame containing the data
@@ -462,7 +503,7 @@ def check_date_as_datetime(data_dictionary: pd.DataFrame, field: str = None, ori
         # Check if all times are 00:00:00.000000 in their respective timezone
         if np.all((column.dt.hour == 0) & (column.dt.minute == 0) & (column.dt.second == 0) & (
                 column.dt.microsecond == 0)):
-            message = (f"Warning in function: {origin_function} - Possible data smell: the values in {col_name} appear "
+            message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Date as DateTime: the values in {col_name} appear "
                        f"to be date, but the expected type in the data model is dateTime")
             print_and_log(message, level=logging.WARN)
             print(f"DATA SMELL DETECTED: Date as DateTime in DataField {col_name}")
@@ -489,7 +530,7 @@ def check_separating_consistency(data_dictionary: pd.DataFrame, decimal_sep: str
                                  field: str = None, origin_function: str = None) -> bool:
     """
     Check if the decimal and thousands separators in float fields align with the data model definitions.
-    If they don't match, logs a warning indicating a possible data smell.
+    If they don't match, logs a warning indicating a data smell.
 
     :param data_dictionary: (pd.DataFrame) DataFrame containing the data
     :param decimal_sep: (str) Expected decimal separator (default ".")
@@ -601,7 +642,7 @@ def check_separating_consistency(data_dictionary: pd.DataFrame, decimal_sep: str
                     # It's valid to have numbers without thousands separator
                     if decimal_sep in mantissa and not is_valid_number_format(val, decimal_sep, ''):
                         print_and_log(
-                            f"Warning in function: {origin_function} - Possible data smell: invalid decimal format in "
+                            f"Warning in function: {origin_function} - DATA SMELL DETECTED: Invalid Decimal Format: invalid decimal format in "
                             f"value {val} of dataField {col_name}",
                             level=logging.WARN)
                         print(f"DATA SMELL DETECTED: Invalid Decimal Format in DataField {col_name}")
@@ -610,7 +651,7 @@ def check_separating_consistency(data_dictionary: pd.DataFrame, decimal_sep: str
 
                 if not is_valid_number_format(val, decimal_sep, thousands_sep):
                     print_and_log(
-                        f"Warning in function: {origin_function} - Possible data smell: invalid number format or "
+                        f"Warning in function: {origin_function} - DATA SMELL DETECTED: Invalid Number Format: invalid number format or "
                         f"wrong separators in value {val} of dataField {col_name}",
                         level=logging.WARN)
                     print(f"DATA SMELL DETECTED: Invalid Number Format in DataField {col_name}")
@@ -620,7 +661,7 @@ def check_separating_consistency(data_dictionary: pd.DataFrame, decimal_sep: str
                 # Without thousand separator, verify a decimal format is correct
                 if used_seps - {decimal_sep}:  # If there are separators different from decimal
                     print_and_log(
-                        f"Warning in function: {origin_function} - Possible data smell: wrong decimal separator used "
+                        f"Warning in function: {origin_function} - DATA SMELL DETECTED: Wrong Decimal Separator: wrong decimal separator used "
                         f"in value {val} of dataField {col_name}",
                         level=logging.WARN)
                     print(f"DATA SMELL DETECTED: Wrong Decimal Separator in DataField {col_name}")
@@ -628,7 +669,7 @@ def check_separating_consistency(data_dictionary: pd.DataFrame, decimal_sep: str
 
                 if decimal_sep in mantissa and not is_valid_number_format(val, decimal_sep, ''):
                     print_and_log(
-                        f"Warning in function: {origin_function} - Possible data smell: invalid decimal format in value {val} of dataField {col_name}",
+                        f"Warning in function: {origin_function} - DATA SMELL DETECTED: Invalid Decimal Format: invalid decimal format in value {val} of dataField {col_name}",
                         level=logging.WARN)
                     print(f"DATA SMELL DETECTED: Invalid Decimal Format in DataField {col_name}")
                     return False
@@ -652,7 +693,7 @@ def check_separating_consistency(data_dictionary: pd.DataFrame, decimal_sep: str
             result = check_column(col)
             if not result:
                 return result  # Return on the first smell found
-        return True
+    return True
 
 
 def check_date_time_consistency(data_dictionary: pd.DataFrame, expected_type: DataType,
@@ -667,7 +708,7 @@ def check_date_time_consistency(data_dictionary: pd.DataFrame, expected_type: Da
     :param field: (str) Optional field to check; if None, checks all datetime fields
     :param origin_function: (str) Optional name of the function that called this function, for logging purposes
 
-    :return: (bool) True if a format is consistent, False otherwise
+    :return: (bool) True if the format is consistent, False otherwise
     """
     if expected_type not in [DataType.DATE, DataType.DATETIME]:
         raise ValueError("expected_type must be either DataType.DATE or DataType.DATETIME")
@@ -697,7 +738,7 @@ def check_date_time_consistency(data_dictionary: pd.DataFrame, expected_type: Da
                             (col_data.dt.microsecond == 0)).all()
 
             if has_time:
-                message = (f"Warning in function: {origin_function} - Possible data smell: The format of date of "
+                message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Date/Time Format Inconsistency: The format of date of "
                            f"dataField {col_name} do not align with the definitions in "
                            f"the data-model (contains time information)")
                 print_and_log(message, level=logging.WARN)
@@ -709,17 +750,23 @@ def check_date_time_consistency(data_dictionary: pd.DataFrame, expected_type: Da
     if field is not None:
         return check_column(field)
     else:
+        # If DataFrame is empty, return True (no smell)
+        if data_dictionary.empty:
+            return True
         # Check all datetime columns
         datetime_fields = data_dictionary.select_dtypes(include=['datetime64[ns]', 'datetime64[ns, UTC]']).columns
-        results = [check_column(col) for col in datetime_fields]
-        return all(results)
+        for col in datetime_fields:
+            result = check_column(col)
+            if not result:
+                return result  # Return on the first smell found
+        return True
 
 
 def check_ambiguous_datetime_format(data_dictionary: pd.DataFrame, field: str = None,
                                     origin_function: str = None) -> bool:
     """
     Checks if datetime/time fields contain values that suggest they might be using a 12-hour clock format.
-    If so, logs a warning indicating a possible data smell.
+    If so, logs a warning indicating a data smell.
     :param data_dictionary: (pd.DataFrame) DataFrame containing the data.
     :param field: (str) Name of the data field; if None, checks all datetime/string fields.
     :param origin_function: (str) Optional name of the function that called this function, for logging purposes.
@@ -741,7 +788,7 @@ def check_ambiguous_datetime_format(data_dictionary: pd.DataFrame, field: str = 
                 twelve_hour_indicators = str_values.str.contains(
                     r'\b(?:1[0-2]|0?[1-9]):[0-5][0-9]\s*(?:AM|PM|am|pm|a\.m\.|p\.m\.)', regex=True, na=False).any()
                 if has_am_pm or twelve_hour_indicators:
-                    message = (f"Warning in function: {origin_function} - Possible data smell: The format of date "
+                    message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Ambiguous Date/Time Format: The format of date "
                                f"of dataField {col_name} is represented in 12-hour clock format")
                     print_and_log(message, level=logging.WARN)
                     print(f"DATA SMELL DETECTED: Ambiguous Date/Time Format in DataField {col_name}")
@@ -766,11 +813,12 @@ def check_ambiguous_datetime_format(data_dictionary: pd.DataFrame, field: str = 
     return True
 
 
+
 def check_suspect_date_value(data_dictionary: pd.DataFrame, min_date: str, max_date: str,
                              field: str = None, origin_function: str = None) -> bool:
     """
     Checks if date/datetime fields have values outside the range defined in the data model.
-    If so, logs a warning indicating a possible data smell.
+    If so, logs a warning indicating a data smell.
 
     :param data_dictionary: (pd.DataFrame) DataFrame containing the data
     :param min_date: (str) Minimum date allowed (e.g., 'YYYY-MM-DD')
@@ -781,10 +829,19 @@ def check_suspect_date_value(data_dictionary: pd.DataFrame, min_date: str, max_d
     :return: (bool) False if a smell is detected, True otherwise.
     """
     try:
+        # Parse dates without timezone handling first, then convert to naive
         min_date_dt = pd.to_datetime(min_date)
         max_date_dt = pd.to_datetime(max_date)
-    except ValueError:
-        raise ValueError("Invalid min_date or max_date format. Please use a format recognizable by pandas.to_datetime.")
+
+        # Convert timezone-aware datetime to naive if needed
+        if hasattr(min_date_dt, 'tz') and min_date_dt.tz is not None:
+            min_date_dt = min_date_dt.tz_localize(None)
+        if hasattr(max_date_dt, 'tz') and max_date_dt.tz is not None:
+            max_date_dt = max_date_dt.tz_localize(None)
+
+    except (ValueError, TypeError) as e:
+        raise ValueError(
+            f"Invalid min_date or max_date format. Please use a format recognizable by pandas.to_datetime. Error: {str(e)}")
 
     if min_date_dt > max_date_dt:
         raise ValueError("min_date cannot be greater than max_date")
@@ -803,7 +860,7 @@ def check_suspect_date_value(data_dictionary: pd.DataFrame, min_date: str, max_d
             # Check if any values are outside the defined range
             out_of_range = (column < min_date_dt) | (column > max_date_dt)
             if out_of_range.any():
-                message = (f"Warning in function: {origin_function} - Possible data smell: The range of date of "
+                message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Suspect Date Value: The range of date of "
                            f"dataField {col_name} do not align with the definitions in the data-model")
                 print_and_log(message, level=logging.WARN)
                 print(f"DATA SMELL DETECTED: Suspect Date Value in DataField {col_name}")
@@ -868,7 +925,7 @@ def check_suspect_far_date_value(data_dictionary: pd.DataFrame, field: str = Non
                 # Get the actual far dates for better context
                 far_dates_list = column[far_dates].dt.strftime('%Y-%m-%d').tolist()
                 message = (
-                    f"Warning in function: {origin_function} - Possible data smell: Found {far_dates_count} dates in "
+                    f"Warning in function: {origin_function} - DATA SMELL DETECTED: Suspect Far Date Value: Found {far_dates_count} dates in "
                     f"dataField {col_name} that are more than {YEARS_THRESHOLD} years away from current date. "
                     f"Far dates found: {far_dates_list}")
                 print_and_log(message, level=logging.WARN)
@@ -892,6 +949,7 @@ def check_suspect_far_date_value(data_dictionary: pd.DataFrame, field: str = Non
             if not result:
                 return result  # Return on the first smell found
     return True
+
 
 
 def check_number_string_size(data_dictionary: pd.DataFrame, field: str = None, origin_function: str = None) -> bool:
@@ -921,12 +979,13 @@ def check_number_string_size(data_dictionary: pd.DataFrame, field: str = None, o
             column = data_dictionary[col_name].dropna()
             if not column.empty:
                 # Check for values between -1 and 1 (excluding -1 and 1)
-                small_numbers = (column > -1) & (column < 1) & (column != 0)  # exclude zero as it's a common valid value
+                small_numbers = (column > -1) & (column < 1) & (
+                            column != 0)  # exclude zero as it's a common valid value
                 if small_numbers.any():
                     small_numbers_count = small_numbers.sum()
                     small_numbers_list = column[small_numbers].tolist()
                     message = (
-                        f"Warning in function: {origin_function} - Possible data smell: Found {small_numbers_count} "
+                        f"Warning in function: {origin_function} - DATA SMELL DETECTED: Small Number: Found {small_numbers_count} "
                         f"small values (between -1 and 1) in dataField {col_name}. "
                         f"Small numbers found: {small_numbers_list}")
                     print_and_log(message, level=logging.WARN)
@@ -939,7 +998,7 @@ def check_number_string_size(data_dictionary: pd.DataFrame, field: str = None, o
                     large_numbers_count = large_numbers.sum()
                     large_numbers_list = column[large_numbers].tolist()
                     message = (
-                        f"Warning in function: {origin_function} - Possible data smell: Found {large_numbers_count} "
+                        f"Warning in function: {origin_function} - DATA SMELL DETECTED: Long Data Value: Found {large_numbers_count} "
                         f"very large values in dataField {col_name}. "
                         f"Large numbers found: {large_numbers_list}")
                     print_and_log(message, level=logging.WARN)
@@ -961,7 +1020,7 @@ def check_number_string_size(data_dictionary: pd.DataFrame, field: str = None, o
                             small_count = small_scientific.sum()
                             small_list = scientific_values[small_scientific].tolist()
                             message = (
-                                f"Warning in function: {origin_function} - Possible data smell: Found {small_count} "
+                                f"Warning in function: {origin_function} - DATA SMELL DETECTED: Small Number in Scientific Notation: Found {small_count} "
                                 f"small values in scientific notation in dataField {col_name}. "
                                 f"Small values found: {small_list}")
                             print_and_log(message, level=logging.WARN)
@@ -974,7 +1033,7 @@ def check_number_string_size(data_dictionary: pd.DataFrame, field: str = None, o
                             large_count = large_scientific.sum()
                             large_list = scientific_values[large_scientific].tolist()
                             message = (
-                                f"Warning in function: {origin_function} - Possible data smell: Found {large_count} "
+                                f"Warning in function: {origin_function} - DATA SMELL DETECTED: Long Data Value in Scientific Notation: Found {large_count} "
                                 f"large values in scientific notation in dataField {col_name}. "
                                 f"Large values found: {large_list}")
                             print_and_log(message, level=logging.WARN)
@@ -990,7 +1049,7 @@ def check_number_string_size(data_dictionary: pd.DataFrame, field: str = None, o
                     long_strings_count = long_strings.sum()
                     long_strings_list = column[long_strings].tolist()
                     message = (
-                        f"Warning in function: {origin_function} - Possible data smell: Found {long_strings_count} "
+                        f"Warning in function: {origin_function} - DATA SMELL DETECTED: Long Data Value: Found {long_strings_count} "
                         f"very long text values in dataField {col_name}. "
                         f"Long values found: {long_strings_list}")
                     print_and_log(message, level=logging.WARN)
@@ -1073,7 +1132,7 @@ def check_string_casing(data_dictionary: pd.DataFrame, field: str = None, origin
             variations = [v for v in unique_values
                           if isinstance(v, str) and v.lower() == value.lower() and v != value]
             if variations:
-                message = (f"Warning in function: {origin_function} - Possible data smell: Found inconsistent "
+                message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Casing Inconsistency: Found inconsistent "
                            f"capitalization for the same value in dataField {col_name}. "
                            f"Variations found: {[value] + variations}")
                 print_and_log(message, level=logging.WARN)
@@ -1083,7 +1142,7 @@ def check_string_casing(data_dictionary: pd.DataFrame, field: str = None, origin
         # 2. Check for an unusual mixed case within values
         mixed_case_values = [v for v in unique_values if isinstance(v, str) and is_mixed_case(v)]
         if mixed_case_values:
-            message = (f"Warning in function: {origin_function} - Possible data smell: Found values with "
+            message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Unusual Mixed Case: Found values with "
                        f"unusual mixed case patterns in dataField {col_name}. "
                        f"Examples: {mixed_case_values[:5]}")
             print_and_log(message, level=logging.WARN)
@@ -1095,7 +1154,7 @@ def check_string_casing(data_dictionary: pd.DataFrame, field: str = None, origin
             sentence_case_values = [v for v in unique_values if isinstance(v, str) and is_sentence_case(v)]
             if 0 < len(sentence_case_values) < len(unique_values):
                 # Some values follow a sentence case while others don't
-                message = (f"Warning in function: {origin_function} - Possible data smell: Inconsistent "
+                message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Inconsistent Sentence Casing: Inconsistent "
                            f"sentence casing in dataField {col_name}. Some values follow sentence case "
                            f"while others don't.")
                 print_and_log(message, level=logging.WARN)
@@ -1118,4 +1177,1002 @@ def check_string_casing(data_dictionary: pd.DataFrame, field: str = None, origin
             result = check_column(col)
             if not result:
                 return result  # Return on the first smell found
+    return True
+
+
+def check_intermingled_data_type(data_dictionary: pd.DataFrame, field: str = None, origin_function: str = None) -> bool:
+    """
+    Check if columns contain intermingled data types (both numeric and text values).
+    This function detects when a column contains a mix of numeric values and text values,
+    which can affect automatic conversions, calculations, and data processing operations.
+
+    Examples of intermingled data types:
+    - "Room 12", "90 Days", "Building A"
+    - "thirty-two", 41, 28.5
+    - "N/A", 123, "Unknown"
+
+    :param data_dictionary: (pd.DataFrame) DataFrame containing the data
+    :param field: (str) Optional field to check; if None, checks all columns
+    :param origin_function: (str) Optional name of the function that called this function, for logging purposes
+
+    :return: (bool) False if intermingled data types are detected, True otherwise
+    """
+
+    def is_purely_numeric(value) -> bool:
+        """
+        Helper function to check if a value is purely numeric.
+        Returns True for integers, floats, and string representations of numbers.
+        """
+        if pd.isna(value):
+            return False
+
+        # If it's already a numeric type
+        if isinstance(value, (int, float, np.integer, np.floating)):
+            return not np.isnan(float(value))
+
+        # Convert to string and check if it represents a number
+        str_value = str(value).strip()
+        if str_value == '':
+            return False
+
+        # Check for scientific notation
+        if 'e' in str_value.lower():
+            try:
+                float(str_value)
+                return True
+            except ValueError:
+                return False
+
+        # Check for regular numbers (including negative and decimal)
+        try:
+            float(str_value)
+            return True
+        except ValueError:
+            return False
+
+    def is_date_like(value) -> bool:
+        """
+        Helper function to check if a value looks like a date.
+        Returns True for strings that look like dates (YYYY-MM-DD, DD/MM/YYYY, etc.)
+        """
+        if pd.isna(value):
+            return False
+
+        str_value = str(value).strip()
+        if str_value == '':
+            return False
+
+        # Common date patterns
+        date_patterns = [
+            r'^\d{4}-\d{1,2}-\d{1,2}$',  # YYYY-MM-DD
+            r'^\d{1,2}/\d{1,2}/\d{4}$',  # MM/DD/YYYY or DD/MM/YYYY
+            r'^\d{1,2}-\d{1,2}-\d{4}$',  # MM-DD-YYYY or DD-MM-YYYY
+            r'^\d{4}/\d{1,2}/\d{1,2}$',  # YYYY/MM/DD
+        ]
+
+        for pattern in date_patterns:
+            if re.match(pattern, str_value):
+                return True
+
+        # Check if it's a pandas Timestamp or datetime object
+        return isinstance(value, (pd.Timestamp, np.datetime64)) or pd.api.types.is_datetime64_any_dtype(pd.Series([value]))
+
+    def is_purely_text(value) -> bool:
+        """
+        Helper function to check if a value is purely text (contains alphabetic characters).
+        Returns True for strings that contain at least one alphabetic character and are not numeric or date-like.
+        """
+        if pd.isna(value):
+            return False
+
+        str_value = str(value).strip()
+        if str_value == '':
+            return False
+
+        # Must contain at least one alphabetic character and not be purely numeric or date-like
+        return (any(c.isalpha() for c in str_value) and
+                not is_purely_numeric(value) and
+                not is_date_like(value))
+
+    def is_scientific_notation(value) -> bool:
+        """
+        Helper function to check if a value is in scientific notation format.
+        Returns True for values like 1.23e-4, 2.45E+3, etc.
+        """
+        if pd.isna(value):
+            return False
+
+        str_value = str(value).strip().lower()
+        if str_value == '':
+            return False
+
+        # Check if it contains 'e' and is a valid float
+        if 'e' in str_value:
+            try:
+                float(str_value)
+                return True
+            except ValueError:
+                return False
+        return False
+
+    def has_mixed_alphanumeric(value) -> bool:
+        """
+        Helper function to check if a single value contains both numeric and alphabetic characters.
+        Examples: "Room 12", "90 Days", "Building A1"
+        Excludes scientific notation (e.g., 1.23e-4) as these are purely numeric.
+        """
+        if pd.isna(value):
+            return False
+
+        str_value = str(value).strip()
+        if str_value == '':
+            return False
+
+        # Skip if it looks like a date
+        if is_date_like(value):
+            return False
+
+        # Skip if it's in scientific notation format
+        if is_scientific_notation(value):
+            return False
+
+        # Skip if it's purely numeric (including scientific notation)
+        if is_purely_numeric(value):
+            return False
+
+        has_alpha = any(c.isalpha() for c in str_value)
+        has_digit = any(c.isdigit() for c in str_value)
+
+        return has_alpha and has_digit
+
+    def check_column(col_name: str) -> bool:
+        """
+        Helper function to check a single column for intermingled data types.
+        """
+        column = data_dictionary[col_name].dropna()
+        if column.empty:
+            return True
+
+        # Count different types of values
+        numeric_values = []
+        text_values = []
+        mixed_values = []
+        date_like_values = []
+
+        for value in column:
+            if has_mixed_alphanumeric(value):
+                mixed_values.append(value)
+            elif is_purely_numeric(value):
+                numeric_values.append(value)
+            elif is_date_like(value):
+                date_like_values.append(value)
+            elif is_purely_text(value):
+                text_values.append(value)
+
+        # Check for intermingled data types
+        has_smell = False
+
+        # Case 1: Column contains both purely numeric and purely text values
+        if len(numeric_values) > 0 and len(text_values) > 0:
+            message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Intermingled Data Type: DataField {col_name} "
+                      f"contains both numeric and text values. Found {len(numeric_values)} numeric values "
+                      f"and {len(text_values)} text values.")
+            print_and_log(message, level=logging.WARN)
+            print(f"DATA SMELL DETECTED: Intermingled Data Type in DataField {col_name}")
+            has_smell = True
+
+        # Case 2: Column contains date-like values mixed with pure text
+        if len(date_like_values) > 0 and len(text_values) > 0:
+            message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Intermingled Data Type: DataField {col_name} "
+                      f"contains both date-like and text values. Found {len(date_like_values)} date-like values "
+                      f"and {len(text_values)} text values.")
+            print_and_log(message, level=logging.WARN)
+            print(f"DATA SMELL DETECTED: Intermingled Data Type in DataField {col_name}")
+            has_smell = True
+
+        # Case 3: Column contains numeric values mixed with date-like values
+        if len(numeric_values) > 0 and len(date_like_values) > 0:
+            message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Intermingled Data Type: DataField {col_name} "
+                      f"contains both numeric and date-like values. Found {len(numeric_values)} numeric values "
+                      f"and {len(date_like_values)} date-like values.")
+            print_and_log(message, level=logging.WARN)
+            print(f"DATA SMELL DETECTED: Intermingled Data Type in DataField {col_name}")
+            has_smell = True
+
+        # Case 4: Column contains values with mixed alphanumeric characters
+        if len(mixed_values) > 0:
+            message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Intermingled Data Type (Mixed Alphanumeric): DataField {col_name} "
+                      f"contains {len(mixed_values)} values with mixed alphanumeric characters. "
+                      f"Examples: {mixed_values[:5]}")
+            print_and_log(message, level=logging.WARN)
+            print(f"DATA SMELL DETECTED: Intermingled Data Type (Mixed Alphanumeric) in DataField {col_name}")
+            has_smell = True
+
+        return not has_smell
+
+    if field is not None:
+        if field not in data_dictionary.columns:
+            raise ValueError(f"DataField '{field}' does not exist in the DataFrame.")
+        return check_column(field)
+    else:
+        # If the DataFrame is empty, return True (no smell)
+        if data_dictionary.empty:
+            return True
+
+        # Check all columns
+        for col in data_dictionary.columns:
+            result = check_column(col)
+            if not result:
+                return result  # Return on the first smell found
+
+    return True
+
+
+def check_contracted_text(data_dictionary: pd.DataFrame, field: str = None, origin_function: str = None) -> bool:
+    """
+    Check if string columns contain contracted words or phrases using the `contractions` library.
+
+    :param data_dictionary: (pd.DataFrame) DataFrame containing the data
+    :param field: (str) Optional field to check; if None, checks all string columns
+    :param origin_function: (str) Optional name of the function that called this function, for logging purposes
+
+    :return: (bool) False if contractions are detected, True otherwise
+    """
+
+    def detect_contractions(text: str) -> list:
+        """
+        Detects contractions in the input text by comparing original and expanded tokens.
+        Returns a list of contractions found.
+        """
+        if pd.isna(text) or not isinstance(text, str) or not text.strip():
+            return []
+
+        tokens = re.findall(r"\b[\w']+\b", text)
+        return [token for token in tokens if contractions.fix(token) != token]
+
+    def check_column(col_name: str) -> bool:
+        """
+        Helper function to check a single column for contractions.
+        """
+        if not pd.api.types.is_string_dtype(data_dictionary[col_name]) and data_dictionary[col_name].dtype != 'object':
+            return True
+
+        column = data_dictionary[col_name].dropna()
+        if column.empty:
+            return True
+
+        values_with_contractions = []
+        all_contractions_found = []
+
+        for value in column:
+            contractions_in_value = detect_contractions(value)
+            if contractions_in_value:
+                values_with_contractions.append(value)
+                all_contractions_found.extend(contractions_in_value)
+
+        if values_with_contractions:
+            unique_contractions = list(set(all_contractions_found))
+            message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Contracted Text: DataField {col_name} "
+                       f"contains {len(values_with_contractions)} values with contractions. "
+                       f"Examples of contractions found: {unique_contractions[:10]}")
+            print_and_log(message, level=logging.WARN)
+            print(f"DATA SMELL DETECTED: Contracted Text in DataField {col_name}")
+            return False
+
+        return True
+
+    if field is not None:
+        if field not in data_dictionary.columns:
+            raise ValueError(f"DataField '{field}' does not exist in the DataFrame.")
+        return check_column(field)
+    else:
+        if data_dictionary.empty:
+            return True
+
+        string_fields = data_dictionary.select_dtypes(include=['object', 'string']).columns
+        for col in string_fields:
+            if not check_column(col):
+                return False
+
+    return True
+
+
+def check_abbreviation_consistency(data_dictionary: pd.DataFrame, field: str = None,
+                                   origin_function: str = None) -> bool:
+    """
+    Detects inconsistent usage of abbreviations, acronyms, or contractions across string fields.
+
+    :param data_dictionary: DataFrame with data
+    :param field: Specific field to check; if None, all text fields are checked
+    :param origin_function: Name of calling function (for logging)
+    :return: False if inconsistencies are found, True otherwise
+    """
+
+    def get_base_form(text: str) -> str:
+        """
+        Gets a more aggressive base form for comparison that handles abbreviations better.
+        """
+        if not isinstance(text, str):
+            return text
+
+        # Expand contractions first
+        expanded = contractions.fix(text)
+        # Remove all punctuation and convert to the lowercase
+        cleaned = re.sub(r"[^\w\s]", "", expanded.lower()).strip()
+        # Remove extra whitespace
+        cleaned = re.sub(r'\s+', ' ', cleaned)
+
+        return cleaned
+
+    def get_abbreviation_key(text: str) -> tuple:
+        """
+        Creates a key for grouping potential abbreviations/variants.
+        Returns a tuple of (normalized_text, word_count, first_letters)
+        """
+        base = get_base_form(text)
+        words = base.split()
+        word_count = len(words)
+
+        # Get first letters for acronym detection
+        first_letters = ''.join([w[0] for w in words if w]) if words else ''
+
+        return (base, word_count, first_letters)
+
+    def are_likely_variants_fast(key1: tuple, key2: tuple, text1: str, text2: str) -> bool:
+        """
+        Fast variant detection using pre-computed keys.
+        """
+        base1, count1, letters1 = key1
+        base2, count2, letters2 = key2
+
+        # Quick checks first
+        if base1 == base2:
+            return True
+
+        # Check acronym patterns (one single word vs multiple words)
+        if count1 == 1 and count2 > 1:
+            # Check if single word matches first letters or is contained
+            if (base1 == letters2[:len(base1)] if len(base1) <= len(letters2) else False) or \
+               any(base1 in word or word.startswith(base1) for word in base2.split()):
+                return True
+        elif count2 == 1 and count1 > 1:
+            # Reverse check
+            if (base2 == letters1[:len(base2)] if len(base2) <= len(letters1) else False) or \
+               any(base2 in word or word.startswith(base2) for word in base1.split()):
+                return True
+
+        # Check substring containment for longer texts
+        if len(base1) >= 3 and len(base2) >= 3:
+            if base1 in base2 or base2 in base1:
+                return True
+
+        return False
+
+    def analyze_abbreviation_consistencies_column(col_name: str) -> bool:
+        """
+        Analyzes a single column for abbreviation inconsistencies.
+        """
+        column = data_dictionary[col_name].dropna()
+        if column.empty or not pd.api.types.is_string_dtype(column):
+            return True
+
+        unique_texts = list(column.unique())
+        if len(unique_texts) <= 1:
+            return True
+
+        # Limit processing for very large datasets to avoid performance issues
+        if len(unique_texts) > 1000:
+            # Sample a representative subset for analysis
+            import random
+            random.seed(42)  # For reproducible results
+            unique_texts = random.sample(unique_texts, 1000)
+
+        # Pre-compute keys for all texts
+        text_keys = {}
+        for text in unique_texts:
+            if isinstance(text, str) and text.strip():
+                text_keys[text] = get_abbreviation_key(text)
+
+        # Group texts by similar characteristics for faster comparison
+        groups_by_base = defaultdict(list)
+        groups_by_letters = defaultdict(list)
+
+        for text, key in text_keys.items():
+            base, count, letters = key
+            groups_by_base[base].append(text)
+            if letters:
+                groups_by_letters[letters].append(text)
+
+        variant_groups = []
+        processed = set()
+
+        # Check within same base groups first (exact matches after normalization)
+        for base, texts in groups_by_base.items():
+            if len(texts) > 1:
+                variant_groups.append(texts)
+                processed.update(texts)
+
+        # Check acronym patterns
+        for letters, potential_acronyms in groups_by_letters.items():
+            if len(letters) <= 5:  # Only check reasonable acronym lengths
+                for text1 in potential_acronyms:
+                    if text1 in processed:
+                        continue
+                    current_group = [text1]
+
+                    # Look for full forms that could match this acronym
+                    for text2, key2 in text_keys.items():
+                        if text2 == text1 or text2 in processed:
+                            continue
+                        if are_likely_variants_fast(text_keys[text1], key2, text1, text2):
+                            current_group.append(text2)
+
+                    if len(current_group) > 1:
+                        variant_groups.append(current_group)
+                        processed.update(current_group)
+
+        # Final pass for remaining substring matches (limited scope)
+        remaining_texts = [t for t in text_keys.keys() if t not in processed]
+        if len(remaining_texts) > 1 and len(remaining_texts) <= 100:  # Only for small remaining sets
+            for i, text1 in enumerate(remaining_texts):
+                if text1 in processed:
+                    continue
+                current_group = [text1]
+
+                for text2 in remaining_texts[i + 1:]:
+                    if text2 in processed:
+                        continue
+                    if are_likely_variants_fast(text_keys[text1], text_keys[text2], text1, text2):
+                        current_group.append(text2)
+
+                if len(current_group) > 1:
+                    variant_groups.append(current_group)
+                    processed.update(current_group)
+
+        # Report findings
+        if variant_groups:
+            # Limit reporting to avoid log spam
+            for group in variant_groups[:5]:  # Report only first 5 groups
+                message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Abbreviation Inconsistencies: Inconsistent lexical forms "
+                           f"detected in DataField {col_name}. "
+                           f"Variants found: {group}")
+                print_and_log(message, level=logging.WARN)
+
+            if len(variant_groups) > 5:
+                message = (f"Warning in function: {origin_function} - Additional {len(variant_groups) - 5} "
+                           f"variant groups found in DataField {col_name}")
+                print_and_log(message, level=logging.WARN)
+
+            print(f"DATA SMELL DETECTED: Abbreviation Inconsistencies in DataField {col_name}")
+            return False
+
+        return True
+
+    if field is not None:
+        if field not in data_dictionary.columns:
+            raise ValueError(f"DataField '{field}' does not exist in the DataFrame.")
+        return analyze_abbreviation_consistencies_column(field)
+
+    if data_dictionary.empty:
+        return True
+
+    for col in data_dictionary.select_dtypes(include=["object", "string"]).columns:
+        if not analyze_abbreviation_consistencies_column(col):
+            return False
+
+    return True
+
+
+def check_syntactic_synonym(data_dictionary: pd.DataFrame, field: str = None,
+                            similarity_threshold: float = 0.8, origin_function: str = None) -> bool:
+    """
+    Detects syntactic synonyms in string fields - values that are syntactically different
+    but semantically similar (e.g., aliases, nicknames, pseudonyms).
+
+    This function identifies data values that have the same semantic meaning but different
+    syntactic representations, such as
+    - Synonyms: (intelligent, clever, smart)
+    - Name variations: (Bill Clinton, President Clinton, William Jefferson Clinton)
+    - Alternative spellings or forms of the same concept
+
+    Uses NLTK's WordNet to compute semantic similarity between words and applies various
+    text normalization techniques to identify potential synonyms.
+
+    :param data_dictionary: (pd.DataFrame) DataFrame containing the data
+    :param field: (str) Optional field to check; if None, checks all string fields
+    :param similarity_threshold: (float) Threshold for semantic similarity (0.0 to 1.0)
+    :param origin_function: (str) Optional name of the function that called this function, for logging purposes
+
+    :return: (bool) False if syntactic synonyms are detected, True otherwise
+    """
+    # Validate similarity threshold
+    if not isinstance(similarity_threshold, (int, float)) or not 0.0 <= similarity_threshold <= 1.0:
+        raise ValueError("similarity_threshold must be a number between 0.0 and 1.0")
+
+    # Download required NLTK data if not already present
+    try:
+        nltk.data.find('corpora/wordnet')
+    except LookupError:
+        nltk.download('wordnet', quiet=True)
+
+    try:
+        nltk.data.find('corpora/omw-1.4')
+    except LookupError:
+        nltk.download('omw-1.4', quiet=True)
+
+    try:
+        nltk.data.find('taggers/averaged_perceptron_tagger')
+    except LookupError:
+        nltk.download('averaged_perceptron_tagger', quiet=True)
+
+    lemmatizer = WordNetLemmatizer()
+
+    def get_wordnet_pos(word):
+        """
+        Map POS tag to first character lemmatizer.lemmatize() accepts
+        """
+        try:
+            tag = nltk.pos_tag([word])[0][1][0].upper()
+            tag_dict = {"J": wordnet.ADJ, "N": wordnet.NOUN, "V": wordnet.VERB, "R": wordnet.ADV}
+            return tag_dict.get(tag, wordnet.NOUN)
+        except:
+            return wordnet.NOUN
+
+    def get_semantic_similarity(word1: str, word2: str) -> float:
+        """
+        Calculate semantic similarity between two words using WordNet synsets.
+        Returns a similarity score between 0.0 and 1.0.
+        """
+        if not word1 or not word2 or word1 == word2:
+            return 1.0 if word1 == word2 else 0.0
+
+        # Get WordNet synsets for both words
+        synsets1 = wordnet.synsets(word1)
+        synsets2 = wordnet.synsets(word2)
+
+        if not synsets1 or not synsets2:
+            return 0.0
+
+        # Calculate maximum similarity between all synset pairs
+        max_similarity = 0.0
+        for synset1 in synsets1:
+            for synset2 in synsets2:
+                # Use path similarity which works well for synonym detection
+                similarity = synset1.path_similarity(synset2)
+                if similarity is not None:
+                    max_similarity = max(max_similarity, similarity)
+
+        return max_similarity
+
+    def get_text_similarity(text1: str, text2: str) -> float:
+        """
+        Calculate overall similarity between two text strings by analyzing individual words.
+        """
+        norm1 = normalize_text(text1)
+        norm2 = normalize_text(text2)
+
+        if not norm1 or not norm2:
+            return 0.0
+
+        if norm1 == norm2:
+            return 1.0
+
+        words1 = norm1.split()
+        words2 = norm2.split()
+
+        if not words1 or not words2:
+            return 0.0
+
+        # For single words, use direct semantic similarity
+        if len(words1) == 1 and len(words2) == 1:
+            return get_semantic_similarity(words1[0], words2[0])
+
+        # For multi-word expressions, check various combinations
+        similarities = []
+
+        # Check if one text is contained in the other (for name variations)
+        if any(word in words2 for word in words1) or any(word in words1 for word in words2):
+            similarities.append(0.7)  # High similarity for partial matches
+
+        # Check word-by-word semantic similarity
+        for word1 in words1:
+            word_similarities = []
+            for word2 in words2:
+                sim = get_semantic_similarity(word1, word2)
+                if sim > 0.3:  # Only consider meaningful similarities
+                    word_similarities.append(sim)
+
+            if word_similarities:
+                similarities.append(max(word_similarities))
+
+        # Check lemmatized forms
+        lemmatized1 = [lemmatizer.lemmatize(word, get_wordnet_pos(word)) for word in words1]
+        lemmatized2 = [lemmatizer.lemmatize(word, get_wordnet_pos(word)) for word in words2]
+
+        common_lemmas = set(lemmatized1) & set(lemmatized2)
+        if common_lemmas:
+            similarities.append(0.8)  # High similarity for common lemmatized forms
+
+        return max(similarities) if similarities else 0.0
+
+    def check_column(col_name: str) -> bool:
+        """
+        Check a single column for syntactic synonyms.
+        """
+        # Only check string/object columns
+        if not pd.api.types.is_string_dtype(data_dictionary[col_name]) and data_dictionary[col_name].dtype != 'object':
+            return True
+
+        column = data_dictionary[col_name].dropna()
+        if column.empty:
+            return True
+
+        unique_values = list(column.unique())
+        if len(unique_values) <= 1:
+            return True
+
+        # Limit processing for very large datasets to avoid performance issues
+        if len(unique_values) > 500:
+            import random
+            random.seed(42)  # For reproducible results
+            unique_values = random.sample(unique_values, 500)
+
+        synonym_groups = []
+        processed = set()
+
+        for i, value1 in enumerate(unique_values):
+            if value1 in processed or not isinstance(value1, str) or not value1.strip():
+                continue
+
+            current_group = [value1]
+
+            for j, value2 in enumerate(unique_values[i + 1:], i + 1):
+                if value2 in processed or not isinstance(value2, str) or not value2.strip():
+                    continue
+
+                # Skip if values are identical
+                if value1 == value2:
+                    continue
+
+                # Calculate similarity
+                similarity = get_text_similarity(value1, value2)
+                # print("Sintax similarity between '{}' and '{}': {:.2f}".format(value1, value2, similarity))
+
+                if similarity >= similarity_threshold:
+                    current_group.append(value2)
+
+            if len(current_group) > 1:
+                synonym_groups.append(current_group)
+                processed.update(current_group)
+
+        # Report findings
+        if synonym_groups:
+            # Filter out groups that are just uppercase acronyms that are minor variations of each other
+            def _is_acronym_token(s: str) -> bool:
+                return isinstance(s, str) and bool(re.match(r'^[A-Z]{2,6}$', s.strip()))
+
+            def _acronym_group_is_similar(group: list) -> bool:
+                if not group or not all(_is_acronym_token(t) for t in group):
+                    return False
+                sets = [set(t) for t in group]
+                for i in range(len(sets)):
+                    for j in range(i + 1, len(sets)):
+                        inter = len(sets[i] & sets[j])
+                        union = len(sets[i] | sets[j])
+                        jacc = inter / union if union else 0.0
+                        if jacc < 0.6:  # if any pair is not similar enough, not a trivial variation
+                            return False
+                return True
+
+            filtered_synonym_groups = [g for g in synonym_groups if not _acronym_group_is_similar(g)]
+
+            if filtered_synonym_groups:
+                for group in filtered_synonym_groups[:5]:  # Report only first 5 groups to avoid log spam
+                    message = (f"Warning in function: {origin_function} - DATA SMELL DETECTED: Syntactic Synonyms: "
+                               f"detected in DataField {col_name}. "
+                               f"Semantically similar values found: {group}")
+                    print_and_log(message, level=logging.WARN)
+
+                if len(filtered_synonym_groups) > 5:
+                    message = (f"Warning in function: {origin_function} - Additional {len(filtered_synonym_groups) - 5} "
+                               f"synonym groups found in DataField {col_name}")
+                    print_and_log(message, level=logging.WARN)
+
+                print(f"DATA SMELL DETECTED: Syntactic Synonyms in DataField {col_name}")
+                return False
+
+        return True
+
+    if field is not None:
+        if field not in data_dictionary.columns:
+            raise ValueError(f"DataField '{field}' does not exist in the DataFrame.")
+        return check_column(field)
+    else:
+        # If DataFrame is empty, return True (no smell)
+        if data_dictionary.empty:
+            return True
+
+        # Check all string/object columns
+        string_fields = data_dictionary.select_dtypes(include=['object', 'string']).columns
+        for col in string_fields:
+            result = check_column(col)
+            if not result:
+                return result  # Return on the first smell found
+
+    return True
+
+
+def check_ambiguous_value(data_dictionary: pd.DataFrame, field: str = None,
+                         ambiguity_threshold: float = 0.8, origin_function: str = None) -> bool:
+    """
+    Detects ambiguous values in string fields that could have multiple meanings depending on context.
+    This function identifies values that represent abbreviations, homonyms, acronyms, or ambiguous contexts
+    that could lead to misinterpretation or confusion in data analysis.
+
+    The function uses dynamic analysis to detect potential ambiguities by:
+    1. Analyzing value patterns and distributions
+    2. Detecting potential abbreviations through length and character patterns
+    3. Identifying homonymous patterns through contextual analysis
+    4. Finding mixed usage patterns that suggest multiple meanings
+    5. Detecting acronym-like patterns and their potential expansions
+
+    Examples of ambiguous values that would be detected:
+    - Abbreviations: "Dr" (doctor vs. drive), "St" (street vs. saint)
+    - Homonyms: "express" (fast vs. show thoughts), "address" (speak to vs. location)
+    - Geographic ambiguity: "Miami" appearing with different contexts
+    - Context-dependent terms: Mixed usage patterns suggesting multiple meanings
+
+    :param data_dictionary: (pd.DataFrame) DataFrame containing the data
+    :param field: (str) Optional field to check; if None, checks all string fields
+    :param ambiguity_threshold: (float) Threshold for ambiguity detection sensitivity (0.0 to 1.0)
+    :param origin_function: (str) Optional name of the function that called this function, for logging purposes
+
+    :return: (bool) False if ambiguous values are detected, True otherwise
+    """
+
+    # Validate ambiguity threshold
+    if not isinstance(ambiguity_threshold, (int, float)) or not 0.0 <= ambiguity_threshold <= 1.0:
+        raise ValueError("ambiguity_threshold must be a number between 0.0 and 1.0")
+
+    def analyze_text_patterns(text: str) -> dict:
+        """
+        Analyze text patterns to identify potential ambiguity indicators.
+        Returns a dictionary with pattern analysis results.
+        """
+        if not isinstance(text, str) or not text.strip():
+            return {'is_potential_abbreviation': False, 'is_short_form': False,
+                   'has_mixed_case': False, 'word_count': 0, 'char_types': set()}
+
+        text = text.strip()
+        patterns = {
+            'is_potential_abbreviation': False,
+            'is_short_form': len(text) <= 4 and text.isalpha(),
+            'has_mixed_case': any(c.isupper() for c in text) and any(c.islower() for c in text),
+            'word_count': len(text.split()),
+            'char_types': set(),
+            'has_punctuation': bool(re.search(r'[^\w\s]', text)),
+            'is_alphanumeric': text.replace(' ', '').isalnum(),
+            'contains_numbers': any(c.isdigit() for c in text)
+        }
+
+        # Analyze character types
+        for char in text:
+            if char.isalpha():
+                patterns['char_types'].add('alpha')
+            elif char.isdigit():
+                patterns['char_types'].add('digit')
+            elif char.isspace():
+                patterns['char_types'].add('space')
+            else:
+                patterns['char_types'].add('punct')
+
+        # Detect potential abbreviation patterns
+        if len(text) <= 5 and text.replace('.', '').replace(' ', '').isalpha():
+            # Short alphabetic strings could be abbreviations
+            patterns['is_potential_abbreviation'] = True
+        elif re.match(r'^[A-Z]{2,5}$', text):
+            # All uppercase 2-5 characters
+            patterns['is_potential_abbreviation'] = True
+        elif re.match(r'^[A-Za-z]\.([A-Za-z]\.)*$', text):
+            # Pattern like "U.S.A." or "Ph.D."
+            patterns['is_potential_abbreviation'] = True
+
+        return patterns
+
+    def detect_contextual_ambiguity(values: list, value_patterns: dict) -> dict:
+        """
+        Detect contextual ambiguity by analyzing value distributions and patterns.
+        """
+        ambiguity_indicators = {
+            'potential_abbreviations': [],
+            'mixed_length_patterns': False,
+            'context_variation_patterns': [],
+            'homonym_candidates': [],
+            'acronym_expansion_pairs': []
+        }
+
+        # Group values by length and pattern
+        length_groups = defaultdict(list)
+        pattern_groups = defaultdict(list)
+
+        for value in values:
+            if isinstance(value, str) and value.strip():
+                length_groups[len(value.strip())].append(value)
+                patterns = value_patterns.get(value, {})
+
+                # Group by pattern characteristics
+                pattern_key = (
+                    patterns.get('is_potential_abbreviation', False),
+                    patterns.get('word_count', 0),
+                    patterns.get('has_mixed_case', False)
+                )
+                pattern_groups[pattern_key].append(value)
+
+        # Detect mixed length patterns (could indicate abbreviations vs full forms)
+        if len(length_groups) > 1:
+            lengths = list(length_groups.keys())
+            min_len, max_len = min(lengths), max(lengths)
+            if max_len > min_len * 2:  # Significant length variation
+                ambiguity_indicators['mixed_length_patterns'] = True
+
+                # Look for potential abbreviation-expansion pairs
+                short_values = [v for l, vals in length_groups.items() if l <= 4 for v in vals]
+                long_values = [v for l, vals in length_groups.items() if l > 4 for v in vals]
+
+                for short_val in short_values:
+                    for long_val in long_values:
+                        if detect_abbreviation_relationship(short_val, long_val):
+                            ambiguity_indicators['acronym_expansion_pairs'].append((short_val, long_val))
+
+        # Detect potential abbreviations
+        for value, patterns in value_patterns.items():
+            if patterns.get('is_potential_abbreviation', False):
+                ambiguity_indicators['potential_abbreviations'].append(value)
+
+        # Detect potential homonyms (same spelling, potentially different contexts)
+        value_frequencies = defaultdict(int)
+        for value in values:
+            if isinstance(value, str):
+                normalized = value.lower().strip()
+                value_frequencies[normalized] += 1
+
+        # Look for values that appear with consistent frequency (might indicate multiple meanings)
+        for normalized_value, frequency in value_frequencies.items():
+            if frequency > 1:
+                original_values = [v for v in values if isinstance(v, str) and v.lower().strip() == normalized_value]
+                if len(set(original_values)) > 1:  # Same normalized form, different original forms
+                    ambiguity_indicators['homonym_candidates'].extend(original_values)
+
+        return ambiguity_indicators
+
+    def detect_abbreviation_relationship(short_val: str, long_val: str) -> bool:
+        """
+        Detect if there's a potential abbreviation relationship between two values.
+        """
+        if not isinstance(short_val, str) or not isinstance(long_val, str):
+            return False
+
+        short_clean = re.sub(r'[^\w]', '', short_val.upper())
+        long_clean = long_val.upper()
+
+        if len(short_clean) < 2 or len(long_clean) < len(short_clean):
+            return False
+
+        # Check if short form matches first letters of words in long form
+        long_words = re.findall(r'\b\w+', long_clean)
+        if len(long_words) >= len(short_clean):
+            first_letters = ''.join(word[0] for word in long_words[:len(short_clean)])
+            if first_letters == short_clean:
+                return True
+
+        # Check if short form is contained in long form
+        if short_clean in long_clean.replace(' ', ''):
+            return True
+
+        # Check consonant pattern matching (removing vowels)
+        short_consonants = re.sub(r'[AEIOU]', '', short_clean)
+        long_consonants = re.sub(r'[AEIOU]', '', long_clean.replace(' ', ''))
+
+        if len(short_consonants) >= 2 and short_consonants in long_consonants:
+            return True
+
+        return False
+
+    def calculate_ambiguity_score(ambiguity_indicators: dict, total_unique_values: int) -> float:
+        """
+        Calculate an ambiguity score based on detected indicators.
+        """
+        score = 0.0
+
+        # Weight different types of ambiguity indicators
+        if ambiguity_indicators['potential_abbreviations']:
+            score += len(ambiguity_indicators['potential_abbreviations']) / total_unique_values * 0.3
+
+        if ambiguity_indicators['mixed_length_patterns']:
+            score += 0.25
+
+        if ambiguity_indicators['acronym_expansion_pairs']:
+            score += len(ambiguity_indicators['acronym_expansion_pairs']) / total_unique_values * 0.4
+
+        if ambiguity_indicators['homonym_candidates']:
+            score += len(set(ambiguity_indicators['homonym_candidates'])) / total_unique_values * 0.2
+
+        # Cap the score at 1.0
+        return min(score, 1.0)
+
+    def check_column(col_name: str) -> bool:
+        """
+        Check a single column for ambiguous values.
+        """
+        # Only check string/object columns
+        if not pd.api.types.is_string_dtype(data_dictionary[col_name]) and data_dictionary[col_name].dtype != 'object':
+            return True
+
+        column = data_dictionary[col_name].dropna()
+        if column.empty:
+            return True
+
+        unique_values = list(column.unique())
+        if len(unique_values) <= 1:
+            return True
+
+        # Limit processing for very large datasets to avoid performance issues
+        if len(unique_values) > 1000:
+            random.seed(42)  # For reproducible results
+            unique_values = random.sample(unique_values, 1000)
+
+        # Analyze patterns for each value
+        value_patterns = {}
+        for value in unique_values:
+            if isinstance(value, str):
+                value_patterns[value] = analyze_text_patterns(value)
+
+        # Detect contextual ambiguity
+        ambiguity_indicators = detect_contextual_ambiguity(unique_values, value_patterns)
+
+        # Calculate ambiguity score
+        ambiguity_score = calculate_ambiguity_score(ambiguity_indicators, len(unique_values))
+
+        # Report findings if ambiguity score exceeds threshold
+        if ambiguity_score >= ambiguity_threshold:
+            message_parts = [
+                f"Warning in function: {origin_function} - DATA SMELL DETECTED: Ambiguous values detected in DataField {col_name} (ambiguity score: {ambiguity_score:.3f})."
+            ]
+
+            if ambiguity_indicators['potential_abbreviations']:
+                message_parts.append(f"Potential abbreviations: {ambiguity_indicators['potential_abbreviations'][:5]}")
+
+            if ambiguity_indicators['acronym_expansion_pairs']:
+                pairs_str = [f"'{pair[0]}' -> '{pair[1]}'" for pair in ambiguity_indicators['acronym_expansion_pairs'][:3]]
+                message_parts.append(f"Potential abbreviation-expansion pairs: {pairs_str}")
+
+            if ambiguity_indicators['homonym_candidates']:
+                message_parts.append(f"Potential homonyms: {list(set(ambiguity_indicators['homonym_candidates']))[:5]}")
+
+            if ambiguity_indicators['mixed_length_patterns']:
+                message_parts.append("Mixed length patterns detected (suggesting abbreviations and full forms)")
+
+            full_message = " ".join(message_parts)
+            print_and_log(full_message, level=logging.WARN)
+            print(f"DATA SMELL DETECTED: Ambiguous Values in DataField {col_name}")
+            return False
+
+        return True
+
+    if field is not None:
+        if field not in data_dictionary.columns:
+            raise ValueError(f"DataField '{field}' does not exist in the DataFrame.")
+        return check_column(field)
+    else:
+        # If the DataFrame is empty, return True (no smell)
+        if data_dictionary.empty:
+            return True
+
+        # Check all string/object columns
+        string_fields = data_dictionary.select_dtypes(include=['object', 'string']).columns
+        for col in string_fields:
+            result = check_column(col)
+            if not result:
+                return result  # Return on the first smell found
+
     return True
